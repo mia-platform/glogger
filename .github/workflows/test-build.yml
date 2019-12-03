@@ -1,4 +1,4 @@
-name: Go
+name: Test and build
 on: [push, pull_request]
 jobs:
   tests:
@@ -12,12 +12,12 @@ jobs:
        - name: Use golang ${{ matrix.go_version }}
          uses: actions/setup-go@v1
          with:
-           go-version: ${{ matrix.go_version }} 
-           
+           go-version: ${{ matrix.go_version }}
+
        - name: Go version
          run: |
            go version
-           
+
        - name: Go get dependencies
          run: |
            go get -v -t -d ./...
@@ -27,9 +27,9 @@ jobs:
           go test ./... -count=1 -race -cover
          if: matrix.go_version != 1.13
          continue-on-error: true
-          
+
        - name: Build
          if: matrix.go_version == 1.13
          run: |
            go build -v .
-          
+
