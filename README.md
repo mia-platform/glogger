@@ -9,6 +9,8 @@ This library follow the Mia Platform logging guidelines.
 
 ## Install
 
+This library require golang at version >= 1.13
+
 ```sh
 go get -u github.com/mia-platform/glogger
 ```
