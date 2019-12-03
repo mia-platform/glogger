@@ -32,9 +32,9 @@ func getReqID(logger *logrus.Logger, headers http.Header) string {
 	}
 	// Generate a random uuid string. e.g. 16c9c1f2-c001-40d3-bbfe-48857367e7b5
 	requestID, err := uuid.NewRandom()
-	logger.WithField("requestId", requestID).Trace("Generated request id")
+	logger.WithField("requestId", requestID).Trace("generated request id")
 	if err != nil {
-		logger.WithError(err).Fatal("Error generating request id")
+		logger.WithError(err).Fatal("error generating request id")
 	}
 	return requestID.String()
 }
@@ -64,14 +64,14 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				"method":   r.Method,
 				"url":      r.URL.String(),
 				"hostname": r.URL.Hostname(),
-			}).Info("Incoming request")
+			}).Info("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
 
 			Get(ctx).WithFields(logrus.Fields{
 				"statusCode":   myw.statusCode,
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
-			}).Info("Request completed")
+			}).Info("request completed")
 		})
 	}
 }
