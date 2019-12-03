@@ -1,6 +1,14 @@
+<div align="center">
+
 # Glogger
 
-Glogger is the logger for mia-platform go services.
+[![Build Status][github-actions-svg]](gitub-actions)
+[![Go Report Card](go-report-card)](go-report-card-link)
+[![GoDoc](godoc-svg)](godoc-link)
+
+</div>
+
+**Glogger is the logger for mia-platform go services.**
 
 It uses [logrus](https://github.com/sirupsen/logrus) as logging library,
 and implements a middleware to be used with [http gorilla mux router](https://github.com/gorilla/mux).
@@ -98,8 +106,9 @@ see the [tags on this repository](https://github.com/mia-platform/terraform-goog
 This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LICENSE.md)
 file for details
 
-[terraform]: https://www.terraform.io/downloads.html
-[provider-google]: https://github.com/terraform-providers/terraform-provider-google
-[provider-google-beta]: https://github.com/terraform-providers/terraform-provider-google-beta
-[provider-random]: https://github.com/terraform-providers/terraform-provider-random
-[semver]: http://semver.org/
+[github-actions]: https://github.com/mia-platform/glogger/actions
+[github-actions-svg]: https://github.com/mia-platform/glogger/workflows/Test%20and%20build/badge.svg
+[godoc-svg]: https://godoc.org/github.com/mia-platform/glogger?status.svg
+[godoc-link]: https://godoc.org/github.com/mia-platform/glogger
+[go-report-card]: https://goreportcard.com/badge/github.com/mia-platform/glogger
+[go-report-card-link]: https://goreportcard.com/report/github.com/mia-platform/glogger
