@@ -23,11 +23,11 @@ jobs:
        - name: Run tests
          run: |
           go test ./... -count=1 -race -cover
-         if: matrix.go_version != $CURRENT_VERSION
+         if: matrix.go_version != env.CURRENT_VERSION
          continue-on-error: true
           
        - name: Build
-         if: matrix.go_version == $CURRENT_VERSION
+         if: matrix.go_version == env.CURRENT_VERSION
          run: |
            go build -v .
           
