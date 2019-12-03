@@ -49,7 +49,7 @@ func(w http.ResponseWriter, req *http.Request) {
 
 #### with excluded path
 
-You can restrict the path where the logger middleware take effect using the second paramenter in RequestMiddlewareLogger. For example, this could be useful to exclude `incoming request` and `request completed` logging in path router.
+You can restrict the path where the logger middleware take effect using the second paramenter in `RequestMiddlewareLogger`. For example, this could be useful to exclude `incoming request` and `request completed` logging in path router.
 
 Logger function is injected anyway in request context.
 
