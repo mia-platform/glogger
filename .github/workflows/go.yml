@@ -1,20 +1,22 @@
 name: Go
-on: [push]
+on: [push, pull_request]
 jobs:
   tests:
-     name: Test on go ${{matrix.go_version}}
+     name: Test on go ${{ matrix.go_version }}
      runs-on: [ubuntu-latest]
-     env:
-       CURRENT_VERSION: 1.13 
      strategy:
        matrix:
-         go_version: [$CURRENT_VERSION, 'latest']
+         go_version: [1.13]
      steps:
        - uses: actions/checkout@v1
-       - name: Use golang ${{matrix.go_version}}
+       - name: Use golang ${{ matrix.go_version }}
          uses: actions/setup-go@v1
          with:
-           go-version: ${{matrix.go_version}} 
+           go-version: ${{ matrix.go_version }} 
+           
+       - name: Go version
+         run: |
+           go version
            
        - name: Go get dependencies
          run: |
@@ -23,12 +25,11 @@ jobs:
        - name: Run tests
          run: |
           go test ./... -count=1 -race -cover
-         if: ${{matrix.go_version}} != $CURRENT_VERSION
+         if: matrix.go_version != 1.13
          continue-on-error: true
           
        - name: Build
-         if: ${{matrix.go_version}} == $CURRENT_VERSION
+         if: matrix.go_version == 1.13
          run: |
            go build -v .
           
-    
