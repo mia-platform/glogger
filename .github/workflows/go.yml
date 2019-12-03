@@ -2,7 +2,7 @@ name: Go
 on: [push]
 jobs:
   tests:
-     name: Test on go ${{matrix.go_version}}
+     name: Test on go ${{ matrix.go_version }}
      runs-on: [ubuntu-latest]
      env:
        CURRENT_VERSION: 1.13 
@@ -11,10 +11,10 @@ jobs:
          go_version: [$CURRENT_VERSION, 'latest']
      steps:
        - uses: actions/checkout@v1
-       - name: Use golang ${{matrix.go_version}}
+       - name: Use golang ${{ matrix.go_version }}
          uses: actions/setup-go@v1
          with:
-           go-version: ${{matrix.go_version}} 
+           go-version: ${{ matrix.go_version }} 
            
        - name: Go get dependencies
          run: |
@@ -23,11 +23,11 @@ jobs:
        - name: Run tests
          run: |
           go test ./... -count=1 -race -cover
-         if: ${{matrix.go_version}} != $CURRENT_VERSION
+         if: matrix.go_version != $CURRENT_VERSION
          continue-on-error: true
           
        - name: Build
-         if: ${{matrix.go_version}} == $CURRENT_VERSION
+         if: matrix.go_version == $CURRENT_VERSION
          run: |
            go build -v .
           
