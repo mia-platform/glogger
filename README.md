@@ -3,8 +3,8 @@
 # Glogger
 
 [![Build Status][github-actions-svg]](gitub-actions)
-[![Go Report Card](go-report-card)](go-report-card-link)
-[![GoDoc](godoc-svg)](godoc-link)
+[![Go Report Card][go-report-card]](go-report-card-link)
+[![GoDoc][godoc-svg]](godoc-link)
 
 </div>
 
