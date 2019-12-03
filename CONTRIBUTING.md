@@ -1,9 +1,8 @@
 # Contribution Guidelines for the Glogger library
 
-First off, thank you for considering contributing to this project. I’ve started it only for scratching one of my hitch,
-and people intresed in it are making me proud of this small module.
+First off, thank you for considering contributing to this project.
 
-Please follow these guidelines for helping me to better address your issue, assessing changes, and helping you finalize your pull requests.
+Please follow these guidelines for helping us to better address your issue, assessing changes, and helping you finalize your pull requests.
 There are many ways to contribute, from writing examples, improving the documentation, submitting bug reports
 and feature requests or writing code which can be incorporated into the module itself.
 
