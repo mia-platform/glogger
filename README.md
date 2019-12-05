@@ -113,3 +113,4 @@ file for details
 [godoc-link]: https://godoc.org/github.com/mia-platform/glogger
 [go-report-card]: https://goreportcard.com/badge/github.com/mia-platform/glogger
 [go-report-card-link]: https://goreportcard.com/report/github.com/mia-platform/glogger
+[semver]: https://semver.org/
