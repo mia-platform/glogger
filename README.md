@@ -33,7 +33,8 @@ The allowed log level are those parsed by [logrus ParseLevel](https://godoc.org/
 // Logger setup
 log, err := glogger.InitHelper(logger.InitOptions{Level: "info"})
 if err != nil {
-	fmt.Fprintf(os.Stderr, "An error occurred while creating the logger: %v\n", err)
+	msg := fmt.Sprintf("An error occurred while creating the logger: %v", err)
+	panic(msg)
 }
 ```
 
