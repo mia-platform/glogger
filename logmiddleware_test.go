@@ -134,7 +134,7 @@ func TestLogMiddleware(t *testing.T) {
 		incomingRequest := entries[i]
 		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
 			Level:     logrus.InfoLevel,
-			Message:   "Incoming request",
+			Message:   "incoming request",
 			RequestID: requestID,
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
@@ -147,7 +147,7 @@ func TestLogMiddleware(t *testing.T) {
 		outcomingRequest := entries[i]
 		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
 			Level:     logrus.InfoLevel,
-			Message:   "Request completed",
+			Message:   "request completed",
 			RequestID: requestID,
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
@@ -187,7 +187,7 @@ func TestLogMiddleware(t *testing.T) {
 		incomingRequest := entries[i]
 		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
 			Level:   logrus.InfoLevel,
-			Message: "Incoming request",
+			Message: "incoming request",
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:   http.MethodGet,
@@ -199,7 +199,7 @@ func TestLogMiddleware(t *testing.T) {
 		outcomingRequest := entries[i]
 		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
 			Level:   logrus.InfoLevel,
-			Message: "Request completed",
+			Message: "request completed",
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
 			StatusCode: statusCode,
