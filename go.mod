@@ -1,4 +1,4 @@
-module glogger
+module github.com/mia-platform/glogger
 
 go 1.13
 
