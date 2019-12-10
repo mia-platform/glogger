@@ -31,7 +31,7 @@ The allowed log level are those parsed by [logrus ParseLevel](https://godoc.org/
 
 ```go
 // Logger setup
-log, err := glogger.InitHelper(logger.InitOptions{Level: "info"})
+log, err := glogger.InitHelper(glogger.InitOptions{Level: "info"})
 if err != nil {
 	msg := fmt.Sprintf("An error occurred while creating the logger: %v", err)
 	panic(msg)
@@ -51,7 +51,7 @@ and, to retrieve logger injected in request context:
 
 ```go
 func(w http.ResponseWriter, req *http.Request) {
-  loggerFn := logger.Get(req.Context())
+  loggerFn := glogger.Get(req.Context())
   loggerFn.Info("log message")
 }
 ```
@@ -75,7 +75,7 @@ To log error message using default field
 _, err := myFn()
 
 if err != nil {
-  logger.Get(req.Context()).WithError(err).Error("error calling function")
+  glogger.Get(req.Context()).WithError(err).Error("error calling function")
 }
 ```
 
@@ -84,9 +84,9 @@ if err != nil {
 To log error message using default field
 
 ```go
-logger.Get(req.Context()).WithField("key", "some field").Info("error calling function")
+glogger.Get(req.Context()).WithField("key", "some field").Info("error calling function")
 
-logger.Get(req.Context()).WithFields(&logrus.Fields{
+glogger.Get(req.Context()).WithFields(&logrus.Fields{
   "key": "some field",
   "another-key": "something"
 }).Info("log with custom fields")
