@@ -64,6 +64,7 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				"method":   r.Method,
 				"url":      r.URL.String(),
 				"hostname": r.URL.Hostname(),
+				"originalUserAgent":r.Header.Get("user-agent"),
 			}).Info("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))

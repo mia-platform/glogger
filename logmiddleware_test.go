@@ -34,6 +34,7 @@ import (
 const hostname = "my-host.com"
 const port = "3030"
 const reqIDKey = "reqId"
+const userAgent = "lightMyRequest"
 
 var defaultRequestPath = fmt.Sprintf("http://%s:%s/my-req", hostname, port)
 
@@ -44,6 +45,7 @@ func testMockMiddlewareInvocation(next http.HandlerFunc, requestID string, logge
 	// create a request
 	req := httptest.NewRequest(http.MethodGet, requestPath, nil)
 	req.Header.Add("x-request-id", requestID)
+	req.Header.Add("user-agent", userAgent)
 	// create a null logger
 	var hook *test.Hook
 	if logger == nil {
@@ -79,6 +81,7 @@ type ExpectedIncomingLogFields struct {
 	Method   string
 	URL      string
 	Hostname string
+	OriginalUserAgent string
 }
 
 type ExpectedOutcomingLogFields struct {
@@ -141,6 +144,7 @@ func TestLogMiddleware(t *testing.T) {
 			Method:   http.MethodGet,
 			URL:      defaultRequestPath,
 			Hostname: hostname,
+			OriginalUserAgent: userAgent,
 		})
 
 		i++
@@ -193,6 +197,7 @@ func TestLogMiddleware(t *testing.T) {
 			Method:   http.MethodGet,
 			URL:      defaultRequestPath,
 			Hostname: hostname,
+			OriginalUserAgent: userAgent,
 		})
 
 		i++
@@ -227,6 +232,7 @@ func incomingRequestAssertions(t *testing.T, incomingRequestLogEntry *logrus.Ent
 	assert.Equal(t, incomingRequestLogEntry.Data["url"], expected.URL, "Unexpected http uri path for log in incoming request")
 	assert.Equal(t, incomingRequestLogEntry.Data["method"], expected.Method, "Unexpected http method for log in incoming request")
 	assert.Equal(t, incomingRequestLogEntry.Data["hostname"], expected.Hostname, "Unexpected hostname for log of request completed")
+	assert.Equal(t, incomingRequestLogEntry.Data["originalUserAgent"], expected.OriginalUserAgent, "Unexpected original userAgent for log of request completed")
 }
 
 func outcomingRequestAssertions(t *testing.T, outcomingRequestLogEntry *logrus.Entry, expected ExpectedOutcomingLogFields) {
