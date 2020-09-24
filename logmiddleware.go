@@ -61,16 +61,47 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 			}
 
 			Get(ctx).WithFields(logrus.Fields{
-				"method":   r.Method,
-				"url":      r.URL.String(),
-				"hostname": r.URL.Hostname(),
-				"originalUserAgent":r.Header.Get("user-agent"),
+				"http":	map[string]interface{}{
+					"request": map[string]interface{}{
+						"method": r.Method,
+						"userAgent": map[string]interface{}{
+							"original": r.Header.Get("user-agent"),
+						},
+					},
+				},
+				"url": map[string]interface{}{
+					"path": r.URL.String(),
+				},
+				"host": map[string]interface{}{
+					"hostname": r.URL.Hostname(),
+					"ip":  r.Header.Get("x-forwaded-for"),
+				},
 			}).Info("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
 
 			Get(ctx).WithFields(logrus.Fields{
-				"statusCode":   myw.statusCode,
+				"http":	map[string]interface{}{
+					"request": map[string]interface{}{
+						"method": r.Method,
+						"userAgent": map[string]interface{}{
+							"original": r.Header.Get("user-agent"),
+						},
+					},
+					"response": map[string]interface{}{
+						"statusCode": myw.statusCode,
+						"body": map[string]interface{}{
+							"bytes": myw.Length(),
+						},
+					},
+				},
+				"url": map[string]interface{}{
+					"path": r.URL.String(),
+				},
+				"host": map[string]interface{}{
+					"hostname": r.URL.Hostname(),
+					"ip":  r.Header.Get("x-forwaded-for"),
+				},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
 		})
