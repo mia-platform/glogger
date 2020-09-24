@@ -37,6 +37,7 @@ const reqIDKey = "reqId"
 const userAgent = "lightMyRequest"
 const ip = "127.0.0.1:80"
 const bodyBytes = 0
+const path = "/my-req"
 
 var defaultRequestPath = fmt.Sprintf("http://%s:%s/my-req", hostname, port)
 
@@ -82,19 +83,19 @@ type ExpectedLogFields struct {
 
 type ExpectedIncomingLogFields struct {
 	Method   string
-	URL      string
+	Path     string
 	Hostname string
 	Original string
 	Ip       string
 }
 
 type ExpectedOutcomingLogFields struct {
-	Method   string
-	URL      string
-	Hostname string
-	Original string
-	Ip       string
-	Bytes	 int
+	Method     string
+	Path       string
+	Hostname   string
+	Original   string
+	Ip         string
+	Bytes      int
 	StatusCode int
 }
 
@@ -152,10 +153,10 @@ func TestLogMiddleware(t *testing.T) {
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:   http.MethodGet,
-			URL:      defaultRequestPath,
+			Path:     path,
 			Hostname: hostname,
 			Original: userAgent,
-			Ip: 	  ip,
+			Ip:       ip,
 		})
 
 		i++
@@ -166,13 +167,13 @@ func TestLogMiddleware(t *testing.T) {
 			RequestID: requestID,
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
-			Method:   http.MethodGet,
-			URL:      defaultRequestPath,
-			Hostname: hostname,
-			Original: userAgent,
-			Ip: 	  ip,
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
 			StatusCode: statusCode,
-			Bytes:    bodyBytes,
+			Bytes:      bodyBytes,
 		})
 
 		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
@@ -212,10 +213,10 @@ func TestLogMiddleware(t *testing.T) {
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:   http.MethodGet,
-			URL:      defaultRequestPath,
+			Path:     path,
 			Hostname: hostname,
 			Original: userAgent,
-			Ip: 	  ip,
+			Ip:       ip,
 		})
 
 		i++
@@ -225,13 +226,13 @@ func TestLogMiddleware(t *testing.T) {
 			Message: "request completed",
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
-			Method:   http.MethodGet,
-			URL:      defaultRequestPath,
-			Hostname: hostname,
-			Original: userAgent,
-			Ip: 	  ip,
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
 			StatusCode: statusCode,
-			Bytes:    bodyBytes,
+			Bytes:      bodyBytes,
 		})
 
 		assert.Equal(t, incomingRequestID, outcomingRequestID, fmt.Sprintf("Data reqId of request and response log must be the same. for log %d", i))
@@ -257,9 +258,9 @@ func incomingRequestAssertions(t *testing.T, incomingRequestLogEntry *logrus.Ent
 	assert.Equal(t, request["method"], expected.Method, "Unexpected http method for log in incoming request")
 	userAgent := request["userAgent"].(map[string]interface{})
 	assert.Equal(t, userAgent["original"], expected.Original, "Unexpected original userAgent for log of request completed")
-	
+
 	url := incomingRequestLogEntry.Data["url"].(map[string]interface{})
-	assert.Equal(t, url["path"], expected.URL, "Unexpected http uri path for log in incoming request")
+	assert.Equal(t, url["path"], expected.Path, "Unexpected http uri path for log in incoming request")
 
 	host := incomingRequestLogEntry.Data["host"].(map[string]interface{})
 	assert.Equal(t, host["hostname"], expected.Hostname, "Unexpected hostname for log of request completed")
@@ -271,19 +272,19 @@ func outcomingRequestAssertions(t *testing.T, outcomingRequestLogEntry *logrus.E
 	assert.Equal(t, request["method"], expected.Method, "Unexpected http method for log in incoming request")
 	userAgent := request["userAgent"].(map[string]interface{})
 	assert.Equal(t, userAgent["original"], expected.Original, "Unexpected original userAgent for log of request completed")
-	
+
 	response := outcomingRequestLogEntry.Data["http"].(map[string]interface{})["response"].(map[string]interface{})
 	assert.Equal(t, response["statusCode"], expected.StatusCode, "Unexpected status code for log of request completed")
 	body := response["body"].(map[string]interface{})
 	assert.Equal(t, body["bytes"], expected.Bytes, "Unexpected status code for log of request completed")
 
 	url := outcomingRequestLogEntry.Data["url"].(map[string]interface{})
-	assert.Equal(t, url["path"], expected.URL, "Unexpected http uri path for log in incoming request")
+	assert.Equal(t, url["path"], expected.Path, "Unexpected http uri path for log in incoming request")
 
 	host := outcomingRequestLogEntry.Data["host"].(map[string]interface{})
 	assert.Equal(t, host["hostname"], expected.Hostname, "Unexpected hostname for log of request completed")
 	assert.Equal(t, host["ip"], expected.Ip, "Unexpected ip for log of request completed")
-	
+
 	_, ok := outcomingRequestLogEntry.Data["responseTime"].(float64)
 	assert.Assert(t, ok, "Invalid took duration for log of request completed")
 }

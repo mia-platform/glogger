@@ -24,7 +24,7 @@ import (
 type readableResponseWriter struct {
 	writer     http.ResponseWriter
 	statusCode int
-	length 	   int
+	length     int
 }
 
 // WriteHeader func, set statusCode parameter
@@ -46,5 +46,5 @@ func (r *readableResponseWriter) Header() http.Header {
 }
 
 func (r *readableResponseWriter) Length() int {
-    return r.length
+	return r.length
 }

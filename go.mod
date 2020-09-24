@@ -1,6 +1,6 @@
 module github.com/mia-platform/glogger
 
-go 1.13
+go 1.15
 
 require (
 	github.com/google/go-cmp v0.3.1 // indirect

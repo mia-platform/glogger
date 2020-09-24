@@ -61,7 +61,7 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 			}
 
 			Get(ctx).WithFields(logrus.Fields{
-				"http":	map[string]interface{}{
+				"http": map[string]interface{}{
 					"request": map[string]interface{}{
 						"method": r.Method,
 						"userAgent": map[string]interface{}{
@@ -70,18 +70,18 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 					},
 				},
 				"url": map[string]interface{}{
-					"path": r.URL.String(),
+					"path": r.URL.RequestURI(),
 				},
 				"host": map[string]interface{}{
 					"hostname": r.URL.Hostname(),
-					"ip":  r.Header.Get("x-forwaded-for"),
+					"ip":       r.Header.Get("x-forwaded-for"),
 				},
 			}).Info("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
 
 			Get(ctx).WithFields(logrus.Fields{
-				"http":	map[string]interface{}{
+				"http": map[string]interface{}{
 					"request": map[string]interface{}{
 						"method": r.Method,
 						"userAgent": map[string]interface{}{
@@ -96,11 +96,11 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 					},
 				},
 				"url": map[string]interface{}{
-					"path": r.URL.String(),
+					"path": r.URL.RequestURI(),
 				},
 				"host": map[string]interface{}{
 					"hostname": r.URL.Hostname(),
-					"ip":  r.Header.Get("x-forwaded-for"),
+					"ip":       r.Header.Get("x-forwaded-for"),
 				},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
