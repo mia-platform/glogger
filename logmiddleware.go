@@ -26,6 +26,40 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Http struct {
+	Request  *Request  `json:"request,omitempty"`
+	Response *Response `json:"response,omitempty"`
+}
+
+type Request struct {
+	Method    string                 `json:"method,omitempty"`
+	UserAgent map[string]interface{} `json:"userAgent,omitempty"`
+}
+
+type Response struct {
+	StatusCode int                    `json:"statuscode,omitempty"`
+	Body       map[string]interface{} `json:"body,omitempty"`
+}
+
+type Host struct {
+	Hostname string `json:"host,omitempty"`
+	Ip       string `json:"ip,omitempty"`
+}
+
+type Url struct {
+	Path string `json:"path,omitempty"`
+}
+
+func getLength(myw readableResponseWriter) int {
+	if content := myw.Header().Get("Content-Length"); content != "" {
+		length, err := strconv.Atoi(content)
+		if err == nil {
+			return length
+		}
+	}
+	return myw.Length()
+}
+
 func getReqID(logger *logrus.Logger, headers http.Header) string {
 	if requestID := headers.Get("X-Request-Id"); requestID != "" {
 		return requestID
@@ -61,47 +95,33 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 			}
 
 			Get(ctx).WithFields(logrus.Fields{
-				"http": map[string]interface{}{
-					"request": map[string]interface{}{
-						"method": r.Method,
-						"userAgent": map[string]interface{}{
-							"original": r.Header.Get("user-agent"),
-						},
+				"http": Http{
+					Request: &Request{
+						Method:    r.Method,
+						UserAgent: map[string]interface{}{"original": r.Header.Get("user-agent")},
 					},
 				},
-				"url": map[string]interface{}{
-					"path": r.URL.RequestURI(),
-				},
-				"host": map[string]interface{}{
-					"hostname": r.URL.Hostname(),
-					"ip":       r.Header.Get("x-forwaded-for"),
-				},
+				"url":  Url{Path: r.URL.RequestURI()},
+				"host": Host{Hostname: r.URL.Hostname(), Ip: r.Header.Get("x-forwaded-for")},
 			}).Info("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
 
 			Get(ctx).WithFields(logrus.Fields{
-				"http": map[string]interface{}{
-					"request": map[string]interface{}{
-						"method": r.Method,
-						"userAgent": map[string]interface{}{
-							"original": r.Header.Get("user-agent"),
+				"http": Http{
+					Request: &Request{
+						Method:    r.Method,
+						UserAgent: map[string]interface{}{"original": r.Header.Get("user-agent")},
+					},
+					Response: &Response{
+						StatusCode: myw.statusCode,
+						Body: map[string]interface{}{
+							"bytes": getLength(myw),
 						},
 					},
-					"response": map[string]interface{}{
-						"statusCode": myw.statusCode,
-						"body": map[string]interface{}{
-							"bytes": myw.Length(),
-						},
-					},
 				},
-				"url": map[string]interface{}{
-					"path": r.URL.RequestURI(),
-				},
-				"host": map[string]interface{}{
-					"hostname": r.URL.Hostname(),
-					"ip":       r.Header.Get("x-forwaded-for"),
-				},
+				"url":          Url{Path: r.URL.RequestURI()},
+				"host":         Host{Hostname: r.URL.Hostname(), Ip: r.Header.Get("x-forwaded-for")},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
 		})
