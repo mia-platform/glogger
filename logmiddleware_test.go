@@ -54,6 +54,7 @@ func testMockMiddlewareInvocation(next http.HandlerFunc, requestID string, logge
 	var hook *test.Hook
 	if logger == nil {
 		logger, hook = test.NewNullLogger()
+		logger.SetLevel(logrus.TraceLevel)
 	}
 	if logger != nil {
 		hook = test.NewLocal(logger)
@@ -112,7 +113,7 @@ func TestLogMiddleware(t *testing.T) {
 
 	t.Run("log is a JSON also with trouble getting logger from context", func(t *testing.T) {
 		var buffer bytes.Buffer
-		logger, _ := InitHelper(InitOptions{})
+		logger, _ := InitHelper(InitOptions{Level: "trace"})
 		logger.Out = &buffer
 		const logMessage = "New log message"
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -122,8 +123,8 @@ func TestLogMiddleware(t *testing.T) {
 		})
 		hook := testMockMiddlewareInvocation(handler, "", logger, "")
 
-		assert.Equal(t, len(hook.AllEntries()), 3, "Number of logs is not 3")
-		entry := hook.AllEntries()[1]
+		assert.Equal(t, len(hook.AllEntries()), 4, "Number of logs is not 4")
+		entry := hook.AllEntries()[2]
 		assert.Equal(t, entry.Message, logMessage, "entry message is not the correct handler message")
 		str := buffer.String()
 
@@ -147,7 +148,7 @@ func TestLogMiddleware(t *testing.T) {
 		i := 0
 		incomingRequest := entries[i]
 		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
-			Level:     logrus.InfoLevel,
+			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
@@ -196,7 +197,7 @@ func TestLogMiddleware(t *testing.T) {
 		i := 0
 		incomingRequest := entries[i]
 		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
-			Level:     logrus.InfoLevel,
+			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
@@ -246,7 +247,7 @@ func TestLogMiddleware(t *testing.T) {
 		i := 0
 		incomingRequest := entries[i]
 		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
-			Level:     logrus.InfoLevel,
+			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
@@ -280,6 +281,38 @@ func TestLogMiddleware(t *testing.T) {
 		hook.Reset()
 	})
 
+	t.Run("using info level returning only outcomingRequest", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(statusCode)
+		})
+		logger, _ := test.NewNullLogger()
+		hook := testMockMiddlewareInvocation(handler, requestID, logger, "")
+
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+
+		i := 0
+		outcomingRequest := entries[i]
+		logAssertions(t, outcomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "request completed",
+			RequestID: requestID,
+		})
+		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
+			StatusCode: statusCode,
+			Bytes:      bodyBytes,
+		})
+
+		hook.Reset()
+	})
+
 	t.Run("middleware correctly passing configured logger with request id from request header", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
@@ -302,12 +335,12 @@ func TestLogMiddleware(t *testing.T) {
 		hook := testMockMiddlewareInvocation(handler, "", nil, "")
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+		assert.Equal(t, len(entries), 3, "Unexpected entries length.")
 
-		i := 0
+		i := 1
 		incomingRequest := entries[i]
 		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
-			Level:   logrus.InfoLevel,
+			Level:   logrus.TraceLevel,
 			Message: "incoming request",
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{

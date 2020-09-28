@@ -38,12 +38,12 @@ type Request struct {
 }
 
 type Response struct {
-	StatusCode int                    `json:"statuscode,omitempty"`
+	StatusCode int                    `json:"statusCode,omitempty"`
 	Body       map[string]interface{} `json:"body,omitempty"`
 }
 
 type Host struct {
-	Hostname string `json:"host,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
 	Ip       string `json:"ip,omitempty"`
 }
 
@@ -104,7 +104,7 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				},
 				"url":  Url{Path: r.URL.RequestURI()},
 				"host": Host{Hostname: r.URL.Hostname(), Ip: r.Header.Get("x-forwaded-for")},
-			}).Info("incoming request")
+			}).Trace("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
 
