@@ -34,7 +34,7 @@ import (
 const hostname = "my-host.com"
 const port = "3030"
 const reqIDKey = "reqId"
-const userAgent = "lightMyRequest"
+const userAgent = "goHttp"
 const ip = "127.0.0.1"
 const bodyBytes = 0
 const path = "/my-req"
