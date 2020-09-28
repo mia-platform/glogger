@@ -35,7 +35,7 @@ const hostname = "my-host.com"
 const port = "3030"
 const reqIDKey = "reqId"
 const userAgent = "lightMyRequest"
-const ip = "127.0.0.1:80"
+const ip = "127.0.0.1"
 const bodyBytes = 0
 const path = "/my-req"
 
@@ -174,6 +174,105 @@ func TestLogMiddleware(t *testing.T) {
 			Ip:         ip,
 			StatusCode: statusCode,
 			Bytes:      bodyBytes,
+		})
+
+		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
+
+		hook.Reset()
+	})
+
+	t.Run("passing a content-length header by default", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(statusCode)
+			w.Header().Set("content-length", "10")
+		})
+		hook := testMockMiddlewareInvocation(handler, requestID, nil, "")
+
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+
+		i := 0
+		incomingRequest := entries[i]
+		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "incoming request",
+			RequestID: requestID,
+		})
+		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+			Method:   http.MethodGet,
+			Path:     path,
+			Hostname: hostname,
+			Original: userAgent,
+			Ip:       ip,
+		})
+
+		i++
+		outcomingRequest := entries[i]
+		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "request completed",
+			RequestID: requestID,
+		})
+		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
+			StatusCode: statusCode,
+			Bytes:      10,
+		})
+
+		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
+
+		hook.Reset()
+	})
+
+	t.Run("without content-length in the header", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		contentToWrite := []byte("testing\n")
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(statusCode)
+			w.Write(contentToWrite)
+		})
+		hook := testMockMiddlewareInvocation(handler, requestID, nil, "")
+
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+
+		i := 0
+		incomingRequest := entries[i]
+		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "incoming request",
+			RequestID: requestID,
+		})
+		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+			Method:   http.MethodGet,
+			Path:     path,
+			Hostname: hostname,
+			Original: userAgent,
+			Ip:       ip,
+		})
+
+		i++
+		outcomingRequest := entries[i]
+		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "request completed",
+			RequestID: requestID,
+		})
+		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
+			StatusCode: statusCode,
+			Bytes:      len(contentToWrite),
 		})
 
 		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
