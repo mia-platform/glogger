@@ -18,6 +18,7 @@ package glogger
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,6 +26,39 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
+
+type HTTP struct {
+	Request  *Request  `json:"request,omitempty"`
+	Response *Response `json:"response,omitempty"`
+}
+
+type Request struct {
+	Method    string                 `json:"method,omitempty"`
+	UserAgent map[string]interface{} `json:"userAgent,omitempty"`
+}
+
+type Response struct {
+	StatusCode int                    `json:"statusCode,omitempty"`
+	Body       map[string]interface{} `json:"body,omitempty"`
+}
+
+type Host struct {
+	Hostname string `json:"hostname,omitempty"`
+	IP       string `json:"ip,omitempty"`
+}
+
+type URL struct {
+	Path string `json:"path,omitempty"`
+}
+
+func getBodyLength(myw readableResponseWriter) int {
+	if content := myw.Header().Get("Content-Length"); content != "" {
+		if length, err := strconv.Atoi(content); err == nil {
+			return length
+		}
+	}
+	return myw.Length()
+}
 
 func getReqID(logger *logrus.Logger, headers http.Header) string {
 	if requestID := headers.Get("X-Request-Id"); requestID != "" {
@@ -61,15 +95,33 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 			}
 
 			Get(ctx).WithFields(logrus.Fields{
-				"method":   r.Method,
-				"url":      r.URL.String(),
-				"hostname": r.URL.Hostname(),
-			}).Info("incoming request")
+				"http": HTTP{
+					Request: &Request{
+						Method:    r.Method,
+						UserAgent: map[string]interface{}{"original": r.Header.Get("user-agent")},
+					},
+				},
+				"url":  URL{Path: r.URL.RequestURI()},
+				"host": Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwaded-for")},
+			}).Trace("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
 
 			Get(ctx).WithFields(logrus.Fields{
-				"statusCode":   myw.statusCode,
+				"http": HTTP{
+					Request: &Request{
+						Method:    r.Method,
+						UserAgent: map[string]interface{}{"original": r.Header.Get("user-agent")},
+					},
+					Response: &Response{
+						StatusCode: myw.statusCode,
+						Body: map[string]interface{}{
+							"bytes": getBodyLength(myw),
+						},
+					},
+				},
+				"url":          URL{Path: r.URL.RequestURI()},
+				"host":         Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwaded-for")},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
 		})

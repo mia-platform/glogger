@@ -34,6 +34,10 @@ import (
 const hostname = "my-host.com"
 const port = "3030"
 const reqIDKey = "reqId"
+const userAgent = "goHttp"
+const ip = "127.0.0.1"
+const bodyBytes = 0
+const path = "/my-req"
 
 var defaultRequestPath = fmt.Sprintf("http://%s:%s/my-req", hostname, port)
 
@@ -44,10 +48,13 @@ func testMockMiddlewareInvocation(next http.HandlerFunc, requestID string, logge
 	// create a request
 	req := httptest.NewRequest(http.MethodGet, requestPath, nil)
 	req.Header.Add("x-request-id", requestID)
+	req.Header.Add("user-agent", userAgent)
+	req.Header.Add("x-forwaded-for", ip)
 	// create a null logger
 	var hook *test.Hook
 	if logger == nil {
 		logger, hook = test.NewNullLogger()
+		logger.SetLevel(logrus.TraceLevel)
 	}
 	if logger != nil {
 		hook = test.NewLocal(logger)
@@ -77,11 +84,19 @@ type ExpectedLogFields struct {
 
 type ExpectedIncomingLogFields struct {
 	Method   string
-	URL      string
+	Path     string
 	Hostname string
+	Original string
+	Ip       string
 }
 
 type ExpectedOutcomingLogFields struct {
+	Method     string
+	Path       string
+	Hostname   string
+	Original   string
+	Ip         string
+	Bytes      int
 	StatusCode int
 }
 
@@ -98,7 +113,7 @@ func TestLogMiddleware(t *testing.T) {
 
 	t.Run("log is a JSON also with trouble getting logger from context", func(t *testing.T) {
 		var buffer bytes.Buffer
-		logger, _ := InitHelper(InitOptions{})
+		logger, _ := InitHelper(InitOptions{Level: "trace"})
 		logger.Out = &buffer
 		const logMessage = "New log message"
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -108,8 +123,8 @@ func TestLogMiddleware(t *testing.T) {
 		})
 		hook := testMockMiddlewareInvocation(handler, "", logger, "")
 
-		assert.Equal(t, len(hook.AllEntries()), 3, "Number of logs is not 3")
-		entry := hook.AllEntries()[1]
+		assert.Equal(t, len(hook.AllEntries()), 4, "Number of logs is not 4")
+		entry := hook.AllEntries()[2]
 		assert.Equal(t, entry.Message, logMessage, "entry message is not the correct handler message")
 		str := buffer.String()
 
@@ -133,14 +148,16 @@ func TestLogMiddleware(t *testing.T) {
 		i := 0
 		incomingRequest := entries[i]
 		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
-			Level:     logrus.InfoLevel,
+			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:   http.MethodGet,
-			URL:      defaultRequestPath,
+			Path:     path,
 			Hostname: hostname,
+			Original: userAgent,
+			Ip:       ip,
 		})
 
 		i++
@@ -151,10 +168,147 @@ func TestLogMiddleware(t *testing.T) {
 			RequestID: requestID,
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
 			StatusCode: statusCode,
+			Bytes:      bodyBytes,
 		})
 
 		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
+
+		hook.Reset()
+	})
+
+	t.Run("passing a content-length header by default", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(statusCode)
+			w.Header().Set("content-length", "10")
+		})
+		hook := testMockMiddlewareInvocation(handler, requestID, nil, "")
+
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+
+		i := 0
+		incomingRequest := entries[i]
+		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+			Level:     logrus.TraceLevel,
+			Message:   "incoming request",
+			RequestID: requestID,
+		})
+		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+			Method:   http.MethodGet,
+			Path:     path,
+			Hostname: hostname,
+			Original: userAgent,
+			Ip:       ip,
+		})
+
+		i++
+		outcomingRequest := entries[i]
+		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "request completed",
+			RequestID: requestID,
+		})
+		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
+			StatusCode: statusCode,
+			Bytes:      10,
+		})
+
+		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
+
+		hook.Reset()
+	})
+
+	t.Run("without content-length in the header", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		contentToWrite := []byte("testing\n")
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(statusCode)
+			w.Write(contentToWrite)
+		})
+		hook := testMockMiddlewareInvocation(handler, requestID, nil, "")
+
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+
+		i := 0
+		incomingRequest := entries[i]
+		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+			Level:     logrus.TraceLevel,
+			Message:   "incoming request",
+			RequestID: requestID,
+		})
+		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+			Method:   http.MethodGet,
+			Path:     path,
+			Hostname: hostname,
+			Original: userAgent,
+			Ip:       ip,
+		})
+
+		i++
+		outcomingRequest := entries[i]
+		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "request completed",
+			RequestID: requestID,
+		})
+		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
+			StatusCode: statusCode,
+			Bytes:      len(contentToWrite),
+		})
+
+		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
+
+		hook.Reset()
+	})
+
+	t.Run("using info level returning only outcomingRequest", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(statusCode)
+		})
+		logger, _ := test.NewNullLogger()
+		hook := testMockMiddlewareInvocation(handler, requestID, logger, "")
+
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+
+		i := 0
+		outcomingRequest := entries[i]
+		logAssertions(t, outcomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "request completed",
+			RequestID: requestID,
+		})
+		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
+			StatusCode: statusCode,
+			Bytes:      bodyBytes,
+		})
 
 		hook.Reset()
 	})
@@ -181,18 +335,20 @@ func TestLogMiddleware(t *testing.T) {
 		hook := testMockMiddlewareInvocation(handler, "", nil, "")
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+		assert.Equal(t, len(entries), 3, "Unexpected entries length.")
 
-		i := 0
+		i := 1
 		incomingRequest := entries[i]
 		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
-			Level:   logrus.InfoLevel,
+			Level:   logrus.TraceLevel,
 			Message: "incoming request",
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:   http.MethodGet,
-			URL:      defaultRequestPath,
+			Path:     path,
 			Hostname: hostname,
+			Original: userAgent,
+			Ip:       ip,
 		})
 
 		i++
@@ -202,7 +358,13 @@ func TestLogMiddleware(t *testing.T) {
 			Message: "request completed",
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:     http.MethodGet,
+			Path:       path,
+			Hostname:   hostname,
+			Original:   userAgent,
+			Ip:         ip,
 			StatusCode: statusCode,
+			Bytes:      bodyBytes,
 		})
 
 		assert.Equal(t, incomingRequestID, outcomingRequestID, fmt.Sprintf("Data reqId of request and response log must be the same. for log %d", i))
@@ -224,13 +386,32 @@ func logAssertions(t *testing.T, logEntry *logrus.Entry, expected ExpectedLogFie
 }
 
 func incomingRequestAssertions(t *testing.T, incomingRequestLogEntry *logrus.Entry, expected ExpectedIncomingLogFields) {
-	assert.Equal(t, incomingRequestLogEntry.Data["url"], expected.URL, "Unexpected http uri path for log in incoming request")
-	assert.Equal(t, incomingRequestLogEntry.Data["method"], expected.Method, "Unexpected http method for log in incoming request")
-	assert.Equal(t, incomingRequestLogEntry.Data["hostname"], expected.Hostname, "Unexpected hostname for log of request completed")
+	http := incomingRequestLogEntry.Data["http"].(HTTP)
+	assert.Equal(t, http.Request.Method, expected.Method, "Unexpected http method for log in incoming request")
+	assert.Equal(t, http.Request.UserAgent["original"], expected.Original, "Unexpected original userAgent for log of request completed")
+
+	url := incomingRequestLogEntry.Data["url"].(URL)
+	assert.Equal(t, url.Path, expected.Path, "Unexpected http uri path for log in incoming request")
+
+	host := incomingRequestLogEntry.Data["host"].(Host)
+	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
+	assert.Equal(t, host.IP, expected.Ip, "Unexpected ip for log of request completed")
 }
 
 func outcomingRequestAssertions(t *testing.T, outcomingRequestLogEntry *logrus.Entry, expected ExpectedOutcomingLogFields) {
-	assert.Equal(t, outcomingRequestLogEntry.Data["statusCode"], expected.StatusCode, "Unexpected status code for log of request completed")
+	http := outcomingRequestLogEntry.Data["http"].(HTTP)
+	assert.Equal(t, http.Request.Method, expected.Method, "Unexpected http method for log in incoming request")
+	assert.Equal(t, http.Request.UserAgent["original"], expected.Original, "Unexpected original userAgent for log of request completed")
+	assert.Equal(t, http.Response.StatusCode, expected.StatusCode, "Unexpected status code for log of request completed")
+	assert.Equal(t, http.Response.Body["bytes"], expected.Bytes, "Unexpected status code for log of request completed")
+
+	url := outcomingRequestLogEntry.Data["url"].(URL)
+	assert.Equal(t, url.Path, expected.Path, "Unexpected http uri path for log in incoming request")
+
+	host := outcomingRequestLogEntry.Data["host"].(Host)
+	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
+	assert.Equal(t, host.IP, expected.Ip, "Unexpected ip for log of request completed")
+
 	_, ok := outcomingRequestLogEntry.Data["responseTime"].(float64)
 	assert.Assert(t, ok, "Invalid took duration for log of request completed")
 }
