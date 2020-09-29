@@ -27,7 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Http struct {
+type HTTP struct {
 	Request  *Request  `json:"request,omitempty"`
 	Response *Response `json:"response,omitempty"`
 }
@@ -44,17 +44,16 @@ type Response struct {
 
 type Host struct {
 	Hostname string `json:"hostname,omitempty"`
-	Ip       string `json:"ip,omitempty"`
+	IP       string `json:"ip,omitempty"`
 }
 
-type Url struct {
+type URL struct {
 	Path string `json:"path,omitempty"`
 }
 
-func getLength(myw readableResponseWriter) int {
+func getBodyLength(myw readableResponseWriter) int {
 	if content := myw.Header().Get("Content-Length"); content != "" {
-		length, err := strconv.Atoi(content)
-		if err == nil {
+		if length, err := strconv.Atoi(content); err == nil {
 			return length
 		}
 	}
@@ -96,20 +95,20 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 			}
 
 			Get(ctx).WithFields(logrus.Fields{
-				"http": Http{
+				"http": HTTP{
 					Request: &Request{
 						Method:    r.Method,
 						UserAgent: map[string]interface{}{"original": r.Header.Get("user-agent")},
 					},
 				},
-				"url":  Url{Path: r.URL.RequestURI()},
-				"host": Host{Hostname: r.URL.Hostname(), Ip: r.Header.Get("x-forwaded-for")},
+				"url":  URL{Path: r.URL.RequestURI()},
+				"host": Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwaded-for")},
 			}).Trace("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
 
 			Get(ctx).WithFields(logrus.Fields{
-				"http": Http{
+				"http": HTTP{
 					Request: &Request{
 						Method:    r.Method,
 						UserAgent: map[string]interface{}{"original": r.Header.Get("user-agent")},
@@ -117,12 +116,12 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 					Response: &Response{
 						StatusCode: myw.statusCode,
 						Body: map[string]interface{}{
-							"bytes": getLength(myw),
+							"bytes": getBodyLength(myw),
 						},
 					},
 				},
-				"url":          Url{Path: r.URL.RequestURI()},
-				"host":         Host{Hostname: r.URL.Hostname(), Ip: r.Header.Get("x-forwaded-for")},
+				"url":          URL{Path: r.URL.RequestURI()},
+				"host":         Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwaded-for")},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
 		})

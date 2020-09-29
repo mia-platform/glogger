@@ -386,31 +386,31 @@ func logAssertions(t *testing.T, logEntry *logrus.Entry, expected ExpectedLogFie
 }
 
 func incomingRequestAssertions(t *testing.T, incomingRequestLogEntry *logrus.Entry, expected ExpectedIncomingLogFields) {
-	http := incomingRequestLogEntry.Data["http"].(Http)
+	http := incomingRequestLogEntry.Data["http"].(HTTP)
 	assert.Equal(t, http.Request.Method, expected.Method, "Unexpected http method for log in incoming request")
 	assert.Equal(t, http.Request.UserAgent["original"], expected.Original, "Unexpected original userAgent for log of request completed")
 
-	url := incomingRequestLogEntry.Data["url"].(Url)
+	url := incomingRequestLogEntry.Data["url"].(URL)
 	assert.Equal(t, url.Path, expected.Path, "Unexpected http uri path for log in incoming request")
 
 	host := incomingRequestLogEntry.Data["host"].(Host)
 	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
-	assert.Equal(t, host.Ip, expected.Ip, "Unexpected ip for log of request completed")
+	assert.Equal(t, host.IP, expected.Ip, "Unexpected ip for log of request completed")
 }
 
 func outcomingRequestAssertions(t *testing.T, outcomingRequestLogEntry *logrus.Entry, expected ExpectedOutcomingLogFields) {
-	http := outcomingRequestLogEntry.Data["http"].(Http)
+	http := outcomingRequestLogEntry.Data["http"].(HTTP)
 	assert.Equal(t, http.Request.Method, expected.Method, "Unexpected http method for log in incoming request")
 	assert.Equal(t, http.Request.UserAgent["original"], expected.Original, "Unexpected original userAgent for log of request completed")
 	assert.Equal(t, http.Response.StatusCode, expected.StatusCode, "Unexpected status code for log of request completed")
 	assert.Equal(t, http.Response.Body["bytes"], expected.Bytes, "Unexpected status code for log of request completed")
 
-	url := outcomingRequestLogEntry.Data["url"].(Url)
+	url := outcomingRequestLogEntry.Data["url"].(URL)
 	assert.Equal(t, url.Path, expected.Path, "Unexpected http uri path for log in incoming request")
 
 	host := outcomingRequestLogEntry.Data["host"].(Host)
 	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
-	assert.Equal(t, host.Ip, expected.Ip, "Unexpected ip for log of request completed")
+	assert.Equal(t, host.IP, expected.Ip, "Unexpected ip for log of request completed")
 
 	_, ok := outcomingRequestLogEntry.Data["responseTime"].(float64)
 	assert.Assert(t, ok, "Invalid took duration for log of request completed")

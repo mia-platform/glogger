@@ -36,6 +36,11 @@ func (r *readableResponseWriter) WriteHeader(code int) {
 // Write func, calls ResponseWriter Write fn
 func (r *readableResponseWriter) Write(b []byte) (int, error) {
 	n, err := r.writer.Write(b)
+
+	if err != nil {
+		return n, err
+	}
+
 	r.length += n
 	return n, err
 }
