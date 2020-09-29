@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Updated
+## v2.0.0 - 29/09/2020
 
-- [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): updated glogger logs format
+### BREAKING CHANGES
+
+- Request and response logged information are now compliant with Mia-Platform logging guidelines. To see the guidelines, please check [Mia Platform Docs](https://docs.mia-platform.eu/docs/development_suite/monitoring-dashboard/dev_ops_guide/log). You can find the implementation details [here](https://github.com/mia-platform/glogger/blob/master/logmiddleware.go).
 
 ## 1.0.0 - 10/12/2019
 
