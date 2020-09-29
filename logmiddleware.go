@@ -102,7 +102,7 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 					},
 				},
 				"url":  URL{Path: r.URL.RequestURI()},
-				"host": Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwaded-for")},
+				"host": Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwarded-for")},
 			}).Trace("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
@@ -121,7 +121,7 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 					},
 				},
 				"url":          URL{Path: r.URL.RequestURI()},
-				"host":         Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwaded-for")},
+				"host":         Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwarded-for")},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
 		})

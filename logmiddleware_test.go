@@ -49,7 +49,7 @@ func testMockMiddlewareInvocation(next http.HandlerFunc, requestID string, logge
 	req := httptest.NewRequest(http.MethodGet, requestPath, nil)
 	req.Header.Add("x-request-id", requestID)
 	req.Header.Add("user-agent", userAgent)
-	req.Header.Add("x-forwaded-for", ip)
+	req.Header.Add("x-forwarded-for", ip)
 	// create a null logger
 	var hook *test.Hook
 	if logger == nil {
