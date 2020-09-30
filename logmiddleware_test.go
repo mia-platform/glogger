@@ -38,6 +38,7 @@ const userAgent = "goHttp"
 const ip = "127.0.0.1"
 const bodyBytes = 0
 const path = "/my-req"
+const clientHost = "client-host"
 
 var defaultRequestPath = fmt.Sprintf("http://%s:%s/my-req", hostname, port)
 
@@ -50,6 +51,8 @@ func testMockMiddlewareInvocation(next http.HandlerFunc, requestID string, logge
 	req.Header.Add("x-request-id", requestID)
 	req.Header.Add("user-agent", userAgent)
 	req.Header.Add("x-forwarded-for", ip)
+	req.Header.Add("x-forwarded-host", clientHost)
+
 	// create a null logger
 	var hook *test.Hook
 	if logger == nil {
@@ -83,21 +86,23 @@ type ExpectedLogFields struct {
 }
 
 type ExpectedIncomingLogFields struct {
-	Method   string
-	Path     string
-	Hostname string
-	Original string
-	Ip       string
+	Method        string
+	Path          string
+	Hostname      string
+	ForwardedHost string
+	Original      string
+	Ip            string
 }
 
 type ExpectedOutcomingLogFields struct {
-	Method     string
-	Path       string
-	Hostname   string
-	Original   string
-	Ip         string
-	Bytes      int
-	StatusCode int
+	Method        string
+	Path          string
+	Hostname      string
+	ForwardedHost string
+	Original      string
+	Ip            string
+	Bytes         int
+	StatusCode    int
 }
 
 func TestLogMiddleware(t *testing.T) {
@@ -153,11 +158,12 @@ func TestLogMiddleware(t *testing.T) {
 			RequestID: requestID,
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
-			Method:   http.MethodGet,
-			Path:     path,
-			Hostname: hostname,
-			Original: userAgent,
-			Ip:       ip,
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
 		})
 
 		i++
@@ -168,13 +174,14 @@ func TestLogMiddleware(t *testing.T) {
 			RequestID: requestID,
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
-			Method:     http.MethodGet,
-			Path:       path,
-			Hostname:   hostname,
-			Original:   userAgent,
-			Ip:         ip,
-			StatusCode: statusCode,
-			Bytes:      bodyBytes,
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
+			StatusCode:    statusCode,
+			Bytes:         bodyBytes,
 		})
 
 		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
@@ -202,11 +209,12 @@ func TestLogMiddleware(t *testing.T) {
 			RequestID: requestID,
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
-			Method:   http.MethodGet,
-			Path:     path,
-			Hostname: hostname,
-			Original: userAgent,
-			Ip:       ip,
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
 		})
 
 		i++
@@ -217,13 +225,14 @@ func TestLogMiddleware(t *testing.T) {
 			RequestID: requestID,
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
-			Method:     http.MethodGet,
-			Path:       path,
-			Hostname:   hostname,
-			Original:   userAgent,
-			Ip:         ip,
-			StatusCode: statusCode,
-			Bytes:      10,
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
+			StatusCode:    statusCode,
+			Bytes:         10,
 		})
 
 		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
@@ -252,11 +261,12 @@ func TestLogMiddleware(t *testing.T) {
 			RequestID: requestID,
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
-			Method:   http.MethodGet,
-			Path:     path,
-			Hostname: hostname,
-			Original: userAgent,
-			Ip:       ip,
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
 		})
 
 		i++
@@ -267,13 +277,14 @@ func TestLogMiddleware(t *testing.T) {
 			RequestID: requestID,
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
-			Method:     http.MethodGet,
-			Path:       path,
-			Hostname:   hostname,
-			Original:   userAgent,
-			Ip:         ip,
-			StatusCode: statusCode,
-			Bytes:      len(contentToWrite),
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
+			StatusCode:    statusCode,
+			Bytes:         len(contentToWrite),
 		})
 
 		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
@@ -301,13 +312,14 @@ func TestLogMiddleware(t *testing.T) {
 			RequestID: requestID,
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
-			Method:     http.MethodGet,
-			Path:       path,
-			Hostname:   hostname,
-			Original:   userAgent,
-			Ip:         ip,
-			StatusCode: statusCode,
-			Bytes:      bodyBytes,
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
+			StatusCode:    statusCode,
+			Bytes:         bodyBytes,
 		})
 
 		hook.Reset()
@@ -344,11 +356,12 @@ func TestLogMiddleware(t *testing.T) {
 			Message: "incoming request",
 		})
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
-			Method:   http.MethodGet,
-			Path:     path,
-			Hostname: hostname,
-			Original: userAgent,
-			Ip:       ip,
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
 		})
 
 		i++
@@ -358,13 +371,14 @@ func TestLogMiddleware(t *testing.T) {
 			Message: "request completed",
 		})
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
-			Method:     http.MethodGet,
-			Path:       path,
-			Hostname:   hostname,
-			Original:   userAgent,
-			Ip:         ip,
-			StatusCode: statusCode,
-			Bytes:      bodyBytes,
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
+			StatusCode:    statusCode,
+			Bytes:         bodyBytes,
 		})
 
 		assert.Equal(t, incomingRequestID, outcomingRequestID, fmt.Sprintf("Data reqId of request and response log must be the same. for log %d", i))
@@ -395,6 +409,7 @@ func incomingRequestAssertions(t *testing.T, incomingRequestLogEntry *logrus.Ent
 
 	host := incomingRequestLogEntry.Data["host"].(Host)
 	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
+	assert.Equal(t, host.ForwardedHost, expected.ForwardedHost, "Unexpected forwaded hostname for log of request completed")
 	assert.Equal(t, host.IP, expected.Ip, "Unexpected ip for log of request completed")
 }
 
@@ -410,6 +425,7 @@ func outcomingRequestAssertions(t *testing.T, outcomingRequestLogEntry *logrus.E
 
 	host := outcomingRequestLogEntry.Data["host"].(Host)
 	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
+	assert.Equal(t, host.ForwardedHost, expected.ForwardedHost, "Unexpected forwaded hostname for log of request completed")
 	assert.Equal(t, host.IP, expected.Ip, "Unexpected ip for log of request completed")
 
 	_, ok := outcomingRequestLogEntry.Data["responseTime"].(float64)

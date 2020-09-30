@@ -43,12 +43,17 @@ type Response struct {
 }
 
 type Host struct {
-	Hostname string `json:"hostname,omitempty"`
-	IP       string `json:"ip,omitempty"`
+	Hostname      string `json:"hostname,omitempty"`
+	ForwardedHost string `json:"forwardedHost,omitempty"`
+	IP            string `json:"ip,omitempty"`
 }
 
 type URL struct {
 	Path string `json:"path,omitempty"`
+}
+
+func getHostname(host string) string {
+	return strings.Split(host, ":")[0]
 }
 
 func getBodyLength(myw readableResponseWriter) int {
@@ -102,7 +107,7 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 					},
 				},
 				"url":  URL{Path: r.URL.RequestURI()},
-				"host": Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwarded-for")},
+				"host": Host{Hostname: getHostname(r.Host), ForwardedHost: r.Header.Get("x-forwarded-host"), IP: r.Header.Get("x-forwarded-for")},
 			}).Trace("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
@@ -121,7 +126,7 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 					},
 				},
 				"url":          URL{Path: r.URL.RequestURI()},
-				"host":         Host{Hostname: r.URL.Hostname(), IP: r.Header.Get("x-forwarded-for")},
+				"host":         Host{Hostname: getHostname(r.Host), ForwardedHost: r.Header.Get("x-forwarded-host"), IP: r.Header.Get("x-forwarded-for")},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
 		})
