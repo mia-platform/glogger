@@ -43,9 +43,9 @@ type Response struct {
 }
 
 type Host struct {
-	Hostname      string `json:"hostname,omitempty"`
-	ForwardedHost string `json:"forwardedHost,omitempty"`
-	IP            string `json:"ip,omitempty"`
+	Hostname   string `json:"hostname,omitempty"`
+	CallerHost string `json:"callerHost,omitempty"`
+	IP         string `json:"ip,omitempty"`
 }
 
 type URL struct {
@@ -108,9 +108,9 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				},
 				"url": URL{Path: r.URL.RequestURI()},
 				"host": Host{
-					Hostname:      removePort(r.Host),
-					ForwardedHost: r.Header.Get("x-forwarded-host"),
-					IP:            removePort(r.RemoteAddr),
+					CallerHost: removePort(r.Host),
+					Hostname:   r.Header.Get("x-forwarded-host"),
+					IP:         removePort(r.RemoteAddr),
 				},
 			}).Trace("incoming request")
 
@@ -131,9 +131,9 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				},
 				"url": URL{Path: r.URL.RequestURI()},
 				"host": Host{
-					Hostname:      removePort(r.Host),
-					ForwardedHost: r.Header.Get("x-forwarded-host"),
-					IP:            removePort(r.RemoteAddr),
+					CallerHost: removePort(r.Host),
+					Hostname:   r.Header.Get("x-forwarded-host"),
+					IP:         removePort(r.RemoteAddr),
 				},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
