@@ -326,7 +326,7 @@ func TestLogMiddleware(t *testing.T) {
 		hook.Reset()
 	})
 
-	t.Run("test getHostname with requestPathWithoutPort", func(t *testing.T) {
+	t.Run("test removePort when with requestPath has no port", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 		var requestPathWithoutPort = fmt.Sprintf("http://%s/my-req", hostname)
