@@ -35,11 +35,11 @@ const hostname = "my-host.com"
 const port = "3030"
 const reqIDKey = "reqId"
 const userAgent = "goHttp"
-const ip = "127.0.0.1"
 const bodyBytes = 0
 const path = "/my-req"
 const clientHost = "client-host"
 
+var ip string
 var defaultRequestPath = fmt.Sprintf("http://%s:%s/my-req", hostname, port)
 
 func testMockMiddlewareInvocation(next http.HandlerFunc, requestID string, logger *logrus.Logger, requestPath string) *test.Hook {
@@ -52,6 +52,7 @@ func testMockMiddlewareInvocation(next http.HandlerFunc, requestID string, logge
 	req.Header.Add("user-agent", userAgent)
 	req.Header.Add("x-forwarded-for", ip)
 	req.Header.Add("x-forwarded-host", clientHost)
+	ip = removePort(req.RemoteAddr)
 
 	// create a null logger
 	var hook *test.Hook
@@ -300,6 +301,41 @@ func TestLogMiddleware(t *testing.T) {
 		})
 		logger, _ := test.NewNullLogger()
 		hook := testMockMiddlewareInvocation(handler, requestID, logger, "")
+
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+
+		i := 0
+		outcomingRequest := entries[i]
+		logAssertions(t, outcomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "request completed",
+			RequestID: requestID,
+		})
+		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			Ip:            ip,
+			StatusCode:    statusCode,
+			Bytes:         bodyBytes,
+		})
+
+		hook.Reset()
+	})
+
+	t.Run("test getHostname with requestPathWithoutPort", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		var requestPathWithoutPort = fmt.Sprintf("http://%s/my-req", hostname)
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(statusCode)
+		})
+		logger, _ := test.NewNullLogger()
+		hook := testMockMiddlewareInvocation(handler, requestID, logger, requestPathWithoutPort)
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 1, "Unexpected entries length.")

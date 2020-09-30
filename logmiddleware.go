@@ -52,7 +52,7 @@ type URL struct {
 	Path string `json:"path,omitempty"`
 }
 
-func getHostname(host string) string {
+func removePort(host string) string {
 	return strings.Split(host, ":")[0]
 }
 
@@ -106,8 +106,12 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 						UserAgent: map[string]interface{}{"original": r.Header.Get("user-agent")},
 					},
 				},
-				"url":  URL{Path: r.URL.RequestURI()},
-				"host": Host{Hostname: getHostname(r.Host), ForwardedHost: r.Header.Get("x-forwarded-host"), IP: r.Header.Get("x-forwarded-for")},
+				"url": URL{Path: r.URL.RequestURI()},
+				"host": Host{
+					Hostname:      removePort(r.Host),
+					ForwardedHost: r.Header.Get("x-forwarded-host"),
+					IP:            removePort(r.RemoteAddr),
+				},
 			}).Trace("incoming request")
 
 			next.ServeHTTP(&myw, r.WithContext(ctx))
@@ -125,8 +129,12 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 						},
 					},
 				},
-				"url":          URL{Path: r.URL.RequestURI()},
-				"host":         Host{Hostname: getHostname(r.Host), ForwardedHost: r.Header.Get("x-forwarded-host"), IP: r.Header.Get("x-forwarded-for")},
+				"url": URL{Path: r.URL.RequestURI()},
+				"host": Host{
+					Hostname:      removePort(r.Host),
+					ForwardedHost: r.Header.Get("x-forwarded-host"),
+					IP:            removePort(r.RemoteAddr),
+				},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
 		})
