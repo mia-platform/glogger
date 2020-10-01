@@ -16,29 +16,70 @@
 
 package glogger
 
-import (
-	"encoding/json"
-	"testing"
-	"time"
+// func TestCustomWriter(t *testing.T) {
+// 	t.Run("level transformer", func(t *testing.T) {
+// 		now := time.Now()
+// 		testCases := []struct {
+// 			inputLevel string
+// 			inputTime  string
+// 			expected   string
+// 		}{
+// 			{
+// 				inputLevel: "trace",
+// 				inputTime:  now.Format(time.RFC3339),
+// 				expected:   fmt.Sprintf(`{"level":10,"time":%d}`, now.Unix()),
+// 			},
+// 			{
+// 				inputLevel: "debug",
+// 				inputTime:  now.Format(time.RFC3339),
+// 				expected:   fmt.Sprintf(`{"level":20,"time":%d}`, now.Unix()),
+// 			},
+// 			{
+// 				inputLevel: "info",
+// 				inputTime:  now.Format(time.RFC3339),
+// 				expected:   fmt.Sprintf(`{"level":30,"time":%d}`, now.Unix()),
+// 			},
+// 			{
+// 				inputLevel: "warn",
+// 				inputTime:  now.Format(time.RFC3339),
+// 				expected:   fmt.Sprintf(`{"level":40,"time":%d}`, now.Unix()),
+// 			},
+// 			{
+// 				inputLevel: "error",
+// 				inputTime:  now.Format(time.RFC3339),
+// 				expected:   fmt.Sprintf(`{"level":50,"time":%d}`, now.Unix()),
+// 			},
+// 			{
+// 				inputLevel: "fatal",
+// 				inputTime:  now.Format(time.RFC3339),
+// 				expected:   fmt.Sprintf(`{"level":60,"time":%d}`, now.Unix()),
+// 			},
+// 			{
+// 				inputLevel: "panic",
+// 				inputTime:  now.Format(time.RFC3339),
+// 				expected:   fmt.Sprintf(`{"level":70,"time":%d}`, now.Unix()),
+// 			},
+// 		}
 
-	"gotest.tools/assert"
-)
+// 		for _, testCase := range testCases {
+// 			t.Run(fmt.Sprintf("test case for level %s", testCase.inputLevel), func(t *testing.T) {
+// 				logEntryMap := map[string]interface{}{
+// 					"level": testCase.inputLevel,
+// 					"time":  now.Format(time.RFC3339),
+// 				}
 
-func TestCustomWriter(t *testing.T) {
-	t.Run("_", func(t *testing.T) {
+// 				logEntry, err := json.Marshal(logEntryMap)
+// 				assert.Assert(t, err == nil, "failed log entry map serialization: %s", err)
 
-		now := time.Now()
-		logEntryMap := map[string]interface{}{
-			"level": "info",
-			"time":  now.Format(time.RFC3339),
-		}
-
-		logEntry, err := json.Marshal(logEntryMap)
-		assert.Assert(t, err == nil, "failed log entry map serialization: %s", err)
-
-		c := CustomWriter{}
-		n, err := c.Write(logEntry)
-		assert.Assert(t, err == nil, "failed custom writer writing: %s", err)
-		assert.Assert(t, n == 30, "invalid length returned, found: %d", n)
-	})
-}
+// 				c := CustomWriter{}
+// 				var n int
+// 				result := captureStdout(t, func() {
+// 					n, err = c.Write(logEntry)
+// 				})
+// 				assert.Assert(t, err == nil, "failed custom writer writing: %s", err)
+// 				assert.Assert(t, n == 30, "invalid length returned, found: %d", n)
+// 				assert.Equal(t, result, testCase.expected, now.Unix())
+// 			})
+// 		}
+// 	})
+// }

@@ -17,7 +17,8 @@
 package glogger
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -53,13 +54,33 @@ func TestInitHelper(t *testing.T) {
 
 	t.Run("customWriter integration", func(t *testing.T) {
 		now := time.Now()
+		var buffer bytes.Buffer
 
-		result := captureStdout(t, func() {
-			logger, _ := InitHelper(InitOptions{})
-			logger.WithTime(now)
-			logger.Info("ciao")
+		// result := captureStdout(t, func() {
+		logger, _ := InitHelper(InitOptions{})
+		logger.Out = &buffer
+		logger.WithTime(now)
+		logger.WithField("foo", "bar").Info("ciao")
+
+		type log struct {
+			Level   int    `json:"level"`
+			Message string `json:"msg"`
+			Foo     string `json:"foo"`
+			Time    int64  `json:"time"`
+		}
+
+		var result log
+		err := json.Unmarshal(buffer.Bytes(), &result)
+
+		assert.Assert(t, err == nil, "Unaxpected Error %s", err)
+		assert.DeepEqual(t, result, log{
+			Level:   int(30),
+			Message: "ciao",
+			Foo:     "bar",
+			Time:    now.Unix(),
 		})
-		assert.Equal(t, result, fmt.Sprintf(`{"level":20,"msg":"ciao","time":%d}`, now.Unix()))
+		// })
+		// assert.Equal(t, result, fmt.Sprintf(`{"level":30,"msg":"ciao","time":%d}`, now.Unix()))
 	})
 }
 
