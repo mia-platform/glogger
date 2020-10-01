@@ -56,7 +56,6 @@ func TestInitHelper(t *testing.T) {
 		now := time.Now()
 		var buffer bytes.Buffer
 
-		// result := captureStdout(t, func() {
 		logger, _ := InitHelper(InitOptions{})
 		logger.Out = &buffer
 		logger.WithTime(now)
@@ -79,8 +78,6 @@ func TestInitHelper(t *testing.T) {
 			Foo:     "bar",
 			Time:    now.Unix(),
 		})
-		// })
-		// assert.Equal(t, result, fmt.Sprintf(`{"level":30,"msg":"ciao","time":%d}`, now.Unix()))
 	})
 }
 
