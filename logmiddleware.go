@@ -27,6 +27,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	forwardedHostHeaderKey = "x-forwarded-host"
+	forwardedForHeaderKey  = "x-forwarded-for"
+)
+
 type HTTP struct {
 	Request  *Request  `json:"request,omitempty"`
 	Response *Response `json:"response,omitempty"`
@@ -43,9 +48,9 @@ type Response struct {
 }
 
 type Host struct {
-	Hostname   string `json:"hostname,omitempty"`
-	CallerHost string `json:"callerHost,omitempty"`
-	IP         string `json:"ip,omitempty"`
+	Hostname      string `json:"hostname,omitempty"`
+	ForwardedHost string `json:"forwardedHost,omitempty"`
+	IP            string `json:"ip,omitempty"`
 }
 
 type URL struct {
@@ -108,9 +113,9 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				},
 				"url": URL{Path: r.URL.RequestURI()},
 				"host": Host{
-					CallerHost: removePort(r.Host),
-					Hostname:   r.Header.Get("x-forwarded-host"),
-					IP:         removePort(r.RemoteAddr),
+					ForwardedHost: r.Header.Get(forwardedHostHeaderKey),
+					Hostname:      removePort(r.Host),
+					IP:            r.Header.Get(forwardedForHeaderKey),
 				},
 			}).Trace("incoming request")
 
@@ -131,9 +136,9 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				},
 				"url": URL{Path: r.URL.RequestURI()},
 				"host": Host{
-					CallerHost: removePort(r.Host),
-					Hostname:   r.Header.Get("x-forwarded-host"),
-					IP:         removePort(r.RemoteAddr),
+					ForwardedHost: r.Header.Get(forwardedHostHeaderKey),
+					Hostname:      removePort(r.Host),
+					IP:            r.Header.Get(forwardedForHeaderKey),
 				},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")
