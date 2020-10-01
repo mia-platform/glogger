@@ -52,27 +52,29 @@ func TestInitHelper(t *testing.T) {
 	})
 
 	t.Run("customWriter integration", func(t *testing.T) {
-		originalStdout := os.Stdout
-		// defer func() {
-
-		// }()
-
-		r, w, _ := os.Pipe()
-
-		// fmt.Printf("error %s\n", err)
-
-		os.Stdout = w
-		logger, _ := InitHelper(InitOptions{})
 		now := time.Now()
-		logger.WithTime(now)
-		logger.Info("ciao")
-		w.Close()
-		bytes, _ := ioutil.ReadAll(r)
-		// fmt.Printf("error2 %s\n", err2)
-		r.Close()
-		os.Stdout = originalStdout
-		fmt.Printf("test %s\n", string(bytes))
 
-		assert.Equal(t, string(bytes), fmt.Sprintf(`{"level":20,"msg":"ciao","time":%d}`, now.Unix()))
+		result := captureStdout(t, func() {
+			logger, _ := InitHelper(InitOptions{})
+			logger.WithTime(now)
+			logger.Info("ciao")
+		})
+		assert.Equal(t, result, fmt.Sprintf(`{"level":20,"msg":"ciao","time":%d}`, now.Unix()))
 	})
+}
+
+func captureStdout(t *testing.T, f func()) string {
+	originalStdout := os.Stdout
+	defer func() {
+		os.Stdout = originalStdout
+	}()
+
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	f()
+
+	w.Close()
+	bytes, _ := ioutil.ReadAll(r)
+	r.Close()
+	return string(bytes)
 }
