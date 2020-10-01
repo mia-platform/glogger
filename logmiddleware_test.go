@@ -135,6 +135,7 @@ func TestLogMiddleware(t *testing.T) {
 		str := buffer.String()
 
 		for i, value := range strings.Split(strings.TrimSpace(str), "\n") {
+			fmt.Printf("%+v\n", value)
 			err := assertJSON(t, value)
 			assert.Equal(t, err, nil, "log %d is not a JSON", i)
 		}

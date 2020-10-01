@@ -29,6 +29,7 @@ type InitOptions struct {
 func InitHelper(options InitOptions) (*logrus.Logger, error) {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
+	logger.SetOutput(&CustomWriter{})
 	if options.Level == "" {
 		return logger, nil
 	}

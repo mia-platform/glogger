@@ -17,7 +17,11 @@
 package glogger
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gotest.tools/assert"
@@ -45,5 +49,30 @@ func TestInitHelper(t *testing.T) {
 
 		assert.Assert(t, logger == nil, "Logger is nil.")
 		assert.Assert(t, err != nil, "An error is expected. Found nil instead.")
+	})
+
+	t.Run("customWriter integration", func(t *testing.T) {
+		originalStdout := os.Stdout
+		// defer func() {
+
+		// }()
+
+		r, w, _ := os.Pipe()
+
+		// fmt.Printf("error %s\n", err)
+
+		os.Stdout = w
+		logger, _ := InitHelper(InitOptions{})
+		now := time.Now()
+		logger.WithTime(now)
+		logger.Info("ciao")
+		w.Close()
+		bytes, _ := ioutil.ReadAll(r)
+		// fmt.Printf("error2 %s\n", err2)
+		r.Close()
+		os.Stdout = originalStdout
+		fmt.Printf("test %s\n", string(bytes))
+
+		assert.Equal(t, string(bytes), fmt.Sprintf(`{"level":20,"msg":"ciao","time":%d}`, now.Unix()))
 	})
 }
