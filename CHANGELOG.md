@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): fix x forwarded for
+
+### Added
+- [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): now host field are compliant with Mia-Platform logs
+
 ## v2.0.0 - 29/09/2020
 
 ### BREAKING CHANGES
