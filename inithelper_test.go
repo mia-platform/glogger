@@ -69,7 +69,7 @@ func TestInitHelper(t *testing.T) {
 		var result log
 		err := json.Unmarshal(buffer.Bytes(), &result)
 
-		assert.Assert(t, err == nil, "Unaxpected Error %s", err)
+		assert.Assert(t, err == nil, "Unexpected Error %s", err)
 		assert.DeepEqual(t, result, log{
 			Level:   30,
 			Message: "hello",
