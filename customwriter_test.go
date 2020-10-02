@@ -92,7 +92,6 @@ func TestCustomWriter(t *testing.T) {
 
 				assert.Assert(t, err == nil, "failed custom writer writing: %s", err)
 				assert.Equal(t, string(result), fmt.Sprintf("{\"level\":%d,\"msg\":\"test\",\"time\":%d}\n", testCase.expectedLevel, testCase.expectedTime))
-
 			})
 		}
 	})

@@ -19,8 +19,6 @@ package glogger
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 
@@ -79,20 +77,4 @@ func TestInitHelper(t *testing.T) {
 			Time:    now.Unix(),
 		})
 	})
-}
-
-func captureStdout(t *testing.T, f func()) string {
-	originalStdout := os.Stdout
-	defer func() {
-		os.Stdout = originalStdout
-	}()
-
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	f()
-
-	w.Close()
-	bytes, _ := ioutil.ReadAll(r)
-	r.Close()
-	return string(bytes)
 }
