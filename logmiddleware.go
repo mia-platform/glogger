@@ -140,7 +140,7 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 					Hostname:      removePort(r.Host),
 					IP:            r.Header.Get(forwardedForHeaderKey),
 				},
-				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
+				"responseTime": float64(time.Since(start).Milliseconds()),
 			}).Info("request completed")
 		})
 	}
