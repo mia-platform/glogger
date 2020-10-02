@@ -59,7 +59,7 @@ func TestInitHelper(t *testing.T) {
 		logger, _ := InitHelper(InitOptions{})
 		logger.Out = &buffer
 		logger.WithTime(now)
-		logger.WithField("foo", "bar").Info("ciao")
+		logger.WithField("foo", "bar").Info("hello")
 
 		type log struct {
 			Level   int    `json:"level"`
@@ -73,8 +73,8 @@ func TestInitHelper(t *testing.T) {
 
 		assert.Assert(t, err == nil, "Unaxpected Error %s", err)
 		assert.DeepEqual(t, result, log{
-			Level:   int(30),
-			Message: "ciao",
+			Level:   30,
+			Message: "hello",
 			Foo:     "bar",
 			Time:    now.Unix(),
 		})
