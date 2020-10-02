@@ -50,7 +50,7 @@ func TestInitHelper(t *testing.T) {
 		assert.Assert(t, err != nil, "An error is expected. Found nil instead.")
 	})
 
-	t.Run("customWriter integration", func(t *testing.T) {
+	t.Run("custom JSONFormatter integration", func(t *testing.T) {
 		now := time.Now()
 		var buffer bytes.Buffer
 
