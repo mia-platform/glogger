@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changes
 - [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): now host field is compliant with Mia-Platform logs
+- [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): now responseTime has been converted from second to millisecond
 
 ## v2.0.0 - 29/09/2020
 
