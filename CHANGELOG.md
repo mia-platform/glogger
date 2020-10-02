@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Fixed
-- [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): using `x-forwarded-for` header to get IP in logs
+## v2.0.3 - 02/10/2020
 
-### Changes
-- [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): now host field is compliant with Mia-Platform logs
-- [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): now responseTime has been converted from second to millisecond
+### Fixed
+- using `x-forwarded-for` header to get IP in logs
+- host field is compliant with Mia-Platform logs
+- responseTime has been converted from second to millisecond
+
+### Added
+
+- forwardedHost key for `x-forwarded-host` header content
 
 ## v2.0.0 - 29/09/2020
 
