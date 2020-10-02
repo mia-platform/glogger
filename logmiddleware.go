@@ -27,6 +27,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	forwardedHostHeaderKey = "x-forwarded-host"
+	forwardedForHeaderKey  = "x-forwarded-for"
+)
+
 type HTTP struct {
 	Request  *Request  `json:"request,omitempty"`
 	Response *Response `json:"response,omitempty"`
@@ -108,9 +113,9 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				},
 				"url": URL{Path: r.URL.RequestURI()},
 				"host": Host{
+					ForwardedHost: r.Header.Get(forwardedHostHeaderKey),
 					Hostname:      removePort(r.Host),
-					ForwardedHost: r.Header.Get("x-forwarded-host"),
-					IP:            removePort(r.RemoteAddr),
+					IP:            r.Header.Get(forwardedForHeaderKey),
 				},
 			}).Trace("incoming request")
 
@@ -131,9 +136,9 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				},
 				"url": URL{Path: r.URL.RequestURI()},
 				"host": Host{
+					ForwardedHost: r.Header.Get(forwardedHostHeaderKey),
 					Hostname:      removePort(r.Host),
-					ForwardedHost: r.Header.Get("x-forwarded-host"),
-					IP:            removePort(r.RemoteAddr),
+					IP:            r.Header.Get(forwardedForHeaderKey),
 				},
 				"responseTime": float64(time.Since(start).Milliseconds()) / 1e3,
 			}).Info("request completed")

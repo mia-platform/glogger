@@ -17,7 +17,10 @@
 package glogger
 
 import (
+	"bytes"
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gotest.tools/assert"
@@ -45,5 +48,33 @@ func TestInitHelper(t *testing.T) {
 
 		assert.Assert(t, logger == nil, "Logger is nil.")
 		assert.Assert(t, err != nil, "An error is expected. Found nil instead.")
+	})
+
+	t.Run("custom JSONFormatter integration", func(t *testing.T) {
+		now := time.Now()
+		var buffer bytes.Buffer
+
+		logger, _ := InitHelper(InitOptions{})
+		logger.Out = &buffer
+		logger.WithTime(now)
+		logger.WithField("foo", "bar").Info("hello")
+
+		type log struct {
+			Level   int    `json:"level"`
+			Message string `json:"msg"`
+			Foo     string `json:"foo"`
+			Time    int64  `json:"time"`
+		}
+
+		var result log
+		err := json.Unmarshal(buffer.Bytes(), &result)
+
+		assert.Assert(t, err == nil, "Unexpected Error %s", err)
+		assert.DeepEqual(t, result, log{
+			Level:   30,
+			Message: "hello",
+			Foo:     "bar",
+			Time:    now.Unix(),
+		})
 	})
 }

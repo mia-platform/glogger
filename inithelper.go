@@ -28,7 +28,7 @@ type InitOptions struct {
 // InitHelper is a function to init json logger
 func InitHelper(options InitOptions) (*logrus.Logger, error) {
 	logger := logrus.New()
-	logger.SetFormatter(&logrus.JSONFormatter{})
+	logger.SetFormatter(&JSONFormatter{})
 	if options.Level == "" {
 		return logger, nil
 	}

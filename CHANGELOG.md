@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): using `x-forwarded-for` header to get IP in logs
+
+### Changes
+- [BMP-507](https://makeitapp.atlassian.net/browse/BMP-507): now host field is compliant with Mia-Platform logs
+
 ## v2.0.0 - 29/09/2020
 
 ### BREAKING CHANGES
