@@ -8,7 +8,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/sirupsen/logrus v1.7.0
-	github.com/stretchr/objx v0.1.1 // indirect
-	golang.org/x/sys v0.0.0-20200918174421-af09f7315aff // indirect
+	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	gotest.tools v2.2.0+incompatible
 )

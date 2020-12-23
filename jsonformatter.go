@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// JSONFormatter struct formats logs in JSON following Mia-Platform guidelines.
 type JSONFormatter struct {
 	// DisableHTMLEscape allows disabling html escaping in output
 	DisableHTMLEscape bool
@@ -32,6 +33,7 @@ type JSONFormatter struct {
 	PrettyPrint bool
 }
 
+// Format will set how to format entry in JSON
 func (f *JSONFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	data := make(logrus.Fields, len(entry.Data)+4)
 	for k, v := range entry.Data {

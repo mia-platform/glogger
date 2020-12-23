@@ -18,6 +18,7 @@ package glogger
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -94,5 +95,20 @@ func TestCustomWriter(t *testing.T) {
 				assert.Equal(t, string(result), fmt.Sprintf("{\"level\":%d,\"msg\":\"test\",\"time\":%d}\n", testCase.expectedLevel, testCase.expectedTime))
 			})
 		}
+	})
+
+	t.Run("string is formatted correctly with DisableHTMLEscape set to true", func(t *testing.T) {
+		c := JSONFormatter{
+			DisableHTMLEscape: true,
+		}
+		logEntry := logrus.Entry{
+			Level:   logrus.TraceLevel,
+			Time:    time.Now(),
+			Message: "test with &, < and > encoded",
+			Data:    logrus.Fields{},
+		}
+		result, err := c.Format(&logEntry)
+		assert.NilError(t, err)
+		assert.Equal(t, strings.TrimSpace((string(result))), fmt.Sprintf(`{"level":10,"msg":"test with &, < and > encoded","time":%d}`, logEntry.Time.Unix()))
 	})
 }
