@@ -92,7 +92,7 @@ type ExpectedIncomingLogFields struct {
 	Hostname      string
 	ForwardedHost string
 	Original      string
-	Ip            string
+	IP            string
 }
 
 type ExpectedOutcomingLogFields struct {
@@ -101,7 +101,7 @@ type ExpectedOutcomingLogFields struct {
 	Hostname      string
 	ForwardedHost string
 	Original      string
-	Ip            string
+	IP            string
 	Bytes         int
 	StatusCode    int
 }
@@ -123,15 +123,12 @@ func TestLogMiddleware(t *testing.T) {
 		logger.Out = &buffer
 		const logMessage = "New log message"
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.WithValue(r.Context(), loggerKey{}, "notALogger")
-
-			Get(r.Context()).Info(logMessage)
+			ctx := context.WithValue(r.Context(), loggerKey{}, "notALogger")
+			Get(ctx).Info(logMessage)
 		})
 		hook := testMockMiddlewareInvocation(handler, "", logger, "")
 
-		assert.Equal(t, len(hook.AllEntries()), 4, "Number of logs is not 4")
-		entry := hook.AllEntries()[2]
-		assert.Equal(t, entry.Message, logMessage, "entry message is not the correct handler message")
+		assert.Equal(t, len(hook.AllEntries()), 3, "Number of logs is not 4")
 		str := buffer.String()
 
 		for i, value := range strings.Split(strings.TrimSpace(str), "\n") {
@@ -164,7 +161,7 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 		})
 
 		i++
@@ -180,7 +177,7 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 			StatusCode:    statusCode,
 			Bytes:         bodyBytes,
 		})
@@ -215,7 +212,7 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 		})
 
 		i++
@@ -231,7 +228,7 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 			StatusCode:    statusCode,
 			Bytes:         10,
 		})
@@ -267,7 +264,7 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 		})
 
 		i++
@@ -283,7 +280,7 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 			StatusCode:    statusCode,
 			Bytes:         len(contentToWrite),
 		})
@@ -318,7 +315,7 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 			StatusCode:    statusCode,
 			Bytes:         bodyBytes,
 		})
@@ -326,7 +323,7 @@ func TestLogMiddleware(t *testing.T) {
 		hook.Reset()
 	})
 
-	t.Run("test getHostname with requestPathWithoutPort", func(t *testing.T) {
+	t.Run("test getHostname with request path without port", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 		var requestPathWithoutPort = fmt.Sprintf("http://%s/my-req", hostname)
@@ -353,10 +350,33 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 			StatusCode:    statusCode,
 			Bytes:         bodyBytes,
 		})
+
+		hook.Reset()
+	})
+
+	t.Run("test getHostname with request path with query", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		const pathWithQuery = "/my-req?foo=bar&some=other"
+		var requestPathWithoutPort = fmt.Sprintf("http://%s%s", hostname, pathWithQuery)
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(statusCode)
+		})
+		logger, _ := InitHelper(InitOptions{
+			DisableHTMLEscape: true,
+		})
+		hook := testMockMiddlewareInvocation(handler, requestID, logger, requestPathWithoutPort)
+
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+		byteEntry, err := entries[0].Bytes()
+		assert.NilError(t, err)
+		assert.Check(t, strings.Contains(string(byteEntry), `"url":{"path":"/my-req?foo=bar&some=other"}`))
 
 		hook.Reset()
 	})
@@ -397,7 +417,7 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 		})
 
 		i++
@@ -412,7 +432,7 @@ func TestLogMiddleware(t *testing.T) {
 			Hostname:      hostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
-			Ip:            ip,
+			IP:            ip,
 			StatusCode:    statusCode,
 			Bytes:         bodyBytes,
 		})
@@ -446,7 +466,7 @@ func incomingRequestAssertions(t *testing.T, incomingRequestLogEntry *logrus.Ent
 	host := incomingRequestLogEntry.Data["host"].(Host)
 	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
 	assert.Equal(t, host.ForwardedHost, expected.ForwardedHost, "Unexpected forwaded hostname for log of request completed")
-	assert.Equal(t, host.IP, expected.Ip, "Unexpected ip for log of request completed")
+	assert.Equal(t, host.IP, expected.IP, "Unexpected ip for log of request completed")
 }
 
 func outcomingRequestAssertions(t *testing.T, outcomingRequestLogEntry *logrus.Entry, expected ExpectedOutcomingLogFields) {
@@ -462,7 +482,7 @@ func outcomingRequestAssertions(t *testing.T, outcomingRequestLogEntry *logrus.E
 	host := outcomingRequestLogEntry.Data["host"].(Host)
 	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
 	assert.Equal(t, host.ForwardedHost, expected.ForwardedHost, "Unexpected forwaded hostname for log of request completed")
-	assert.Equal(t, host.IP, expected.Ip, "Unexpected ip for log of request completed")
+	assert.Equal(t, host.IP, expected.IP, "Unexpected ip for log of request completed")
 
 	_, ok := outcomingRequestLogEntry.Data["responseTime"].(float64)
 	assert.Assert(t, ok, "Invalid took duration for log of request completed")
