@@ -22,13 +22,16 @@ import (
 
 // InitOptions is the struct of options to configure the logger
 type InitOptions struct {
-	Level string
+	Level             string
+	DisableHTMLEscape bool
 }
 
 // InitHelper is a function to init json logger
 func InitHelper(options InitOptions) (*logrus.Logger, error) {
 	logger := logrus.New()
-	logger.SetFormatter(&JSONFormatter{})
+	logger.SetFormatter(&JSONFormatter{
+		DisableHTMLEscape: options.DisableHTMLEscape,
+	})
 	if options.Level == "" {
 		return logger, nil
 	}
