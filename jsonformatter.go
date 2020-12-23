@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// JSONFormatter will format logs in JSON with
+// JSONFormatter struct formats logs in JSON following Mia-Platform guidelines.
 type JSONFormatter struct {
 	// DisableHTMLEscape allows disabling html escaping in output
 	DisableHTMLEscape bool
