@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/google/go-cmp v0.3.1 // indirect
-	github.com/google/uuid v1.1.5
+	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/sirupsen/logrus v1.7.0
