@@ -100,7 +100,7 @@ and the process for submitting pull requests to us.
 ## Versioning
 
 We use [SemVer][semver] for versioning. For the versions available,
-see the [tags on this repository](https://github.com/mia-platform/terraform-google-project/tags).
+see the [tags on this repository](https://github.com/mia-platform/glogger/tags).
 
 ## License
 
