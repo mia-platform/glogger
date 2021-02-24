@@ -39,43 +39,43 @@ func TestCustomWriter(t *testing.T) {
 				inputLevel:    logrus.TraceLevel,
 				expectedLevel: 10,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.DebugLevel,
 				expectedLevel: 20,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.InfoLevel,
 				expectedLevel: 30,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.WarnLevel,
 				expectedLevel: 40,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.ErrorLevel,
 				expectedLevel: 50,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.FatalLevel,
 				expectedLevel: 60,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.PanicLevel,
 				expectedLevel: 70,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 		}
 
@@ -109,6 +109,6 @@ func TestCustomWriter(t *testing.T) {
 		}
 		result, err := c.Format(&logEntry)
 		assert.NilError(t, err)
-		assert.Equal(t, strings.TrimSpace((string(result))), fmt.Sprintf(`{"level":10,"msg":"test with &, < and > encoded","time":%d}`, logEntry.Time.Unix()))
+		assert.Equal(t, strings.TrimSpace((string(result))), fmt.Sprintf(`{"level":10,"msg":"test with &, < and > encoded","time":%d}`, logEntry.Time.UnixNano()/int64(1e6)))
 	})
 }

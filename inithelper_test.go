@@ -74,7 +74,7 @@ func TestInitHelper(t *testing.T) {
 			Level:   30,
 			Message: "hello",
 			Foo:     "bar",
-			Time:    now.Unix(),
+			Time:    now.UnixNano() / int64(1e6),
 		})
 	})
 }
