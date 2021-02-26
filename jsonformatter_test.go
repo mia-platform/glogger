@@ -97,10 +97,6 @@ func TestCustomWriter(t *testing.T) {
 
 				assert.Equal(t, stringResult, fmt.Sprintf("{\"level\":%d,\"msg\":\"test\",\"time\":%d}\n", testCase.expectedLevel, testCase.expectedTime))
 
-				// timestampString := strings.Split(strings.Split(stringResult, "\"time\":")[1], "}")[0]
-				// timestamp, _ := strconv.Atoi(timestampString)
-				// assert.Assert(t, timestamp >= 1e12 && timestamp <= 1e15, "timestamp is not in milliseconds: %d", timestamp)
-
 				var timestamp int
 				fmt.Sscanf(stringResult,
 					"{\"level\":"+strconv.Itoa(testCase.expectedLevel)+",\"msg\":\"test\",\"time\":%d}",
