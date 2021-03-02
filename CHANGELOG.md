@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - add option `DisableHTMLEscape` to parse log
+- log timestamp has precision in milliseconds instead of seconds.
 
 ## v2.0.3 - 02/10/2020
 

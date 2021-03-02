@@ -18,6 +18,7 @@ package glogger
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -39,43 +40,43 @@ func TestCustomWriter(t *testing.T) {
 				inputLevel:    logrus.TraceLevel,
 				expectedLevel: 10,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.DebugLevel,
 				expectedLevel: 20,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.InfoLevel,
 				expectedLevel: 30,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.WarnLevel,
 				expectedLevel: 40,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.ErrorLevel,
 				expectedLevel: 50,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.FatalLevel,
 				expectedLevel: 60,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 			{
 				inputLevel:    logrus.PanicLevel,
 				expectedLevel: 70,
 				inputTime:     now,
-				expectedTime:  now.Unix(),
+				expectedTime:  now.UnixNano() / int64(1e6),
 			},
 		}
 
@@ -90,9 +91,17 @@ func TestCustomWriter(t *testing.T) {
 				c := JSONFormatter{}
 
 				result, err := c.Format(&logEntry)
+				stringResult := string(result)
 
 				assert.Assert(t, err == nil, "failed custom writer writing: %s", err)
-				assert.Equal(t, string(result), fmt.Sprintf("{\"level\":%d,\"msg\":\"test\",\"time\":%d}\n", testCase.expectedLevel, testCase.expectedTime))
+
+				assert.Equal(t, stringResult, fmt.Sprintf("{\"level\":%d,\"msg\":\"test\",\"time\":%d}\n", testCase.expectedLevel, testCase.expectedTime))
+
+				var timestamp int
+				fmt.Sscanf(stringResult,
+					"{\"level\":"+strconv.Itoa(testCase.expectedLevel)+",\"msg\":\"test\",\"time\":%d}",
+					&timestamp)
+				assert.Assert(t, timestamp >= 1e12 && timestamp <= 1e15, "timestamp is not in milliseconds: %d", timestamp)
 			})
 		}
 	})
@@ -109,6 +118,6 @@ func TestCustomWriter(t *testing.T) {
 		}
 		result, err := c.Format(&logEntry)
 		assert.NilError(t, err)
-		assert.Equal(t, strings.TrimSpace((string(result))), fmt.Sprintf(`{"level":10,"msg":"test with &, < and > encoded","time":%d}`, logEntry.Time.Unix()))
+		assert.Equal(t, strings.TrimSpace((string(result))), fmt.Sprintf(`{"level":10,"msg":"test with &, < and > encoded","time":%d}`, logEntry.Time.UnixNano()/int64(1e6)))
 	})
 }

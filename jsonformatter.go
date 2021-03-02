@@ -47,7 +47,7 @@ func (f *JSONFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		}
 	}
 
-	data["time"] = entry.Time.Unix()
+	data["time"] = entry.Time.UnixNano() / int64(1e6)
 	data["msg"] = entry.Message
 	data["level"] = getLevelFromString(entry.Level)
 
