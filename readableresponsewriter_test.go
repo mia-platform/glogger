@@ -44,7 +44,7 @@ func (r *ResponseWriterMock) Write(b []byte) (int, error) {
 
 func TestReadableResponseWriter(t *testing.T) {
 	mock := ResponseWriterMock{}
-	myw := readableResponseWriter{writer: &mock}
+	myw := ReadableResponseWriter{writer: &mock}
 
 	myw.WriteHeader(200)
 	if !mock.writeHeaderCalled {

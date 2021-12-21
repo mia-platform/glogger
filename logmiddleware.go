@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -66,7 +65,7 @@ func removePort(host string) string {
 	return strings.Split(host, ":")[0]
 }
 
-func getBodyLength(myw readableResponseWriter) int {
+func getBodyLength(myw ReadableResponseWriter) int {
 	if content := myw.Header().Get("Content-Length"); content != "" {
 		if length, err := strconv.Atoi(content); err == nil {
 			return length
@@ -92,61 +91,12 @@ func getReqID(logger *logrus.Logger, headers http.Header) string {
 // It logs the incoming request and when request is completed, adding latency of the request
 func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-
-			requestID := getReqID(logger, r.Header)
-			ctx := WithLogger(r.Context(), logrus.NewEntry(logger).WithFields(logrus.Fields{
-				"reqId": requestID,
-			}))
-			myw := readableResponseWriter{writer: w, statusCode: http.StatusOK}
-
-			// Skip logging for excluded routes
-			for _, prefix := range excludedPrefix {
-				if strings.HasPrefix(r.URL.RequestURI(), prefix) {
-					next.ServeHTTP(&myw, r.WithContext(ctx))
-					return
-				}
-			}
-
-			Get(ctx).WithFields(logrus.Fields{
-				"http": HTTP{
-					Request: &Request{
-						Method:    r.Method,
-						UserAgent: map[string]interface{}{"original": r.Header.Get("user-agent")},
-					},
-				},
-				"url": URL{Path: r.URL.RequestURI()},
-				"host": Host{
-					ForwardedHost: r.Header.Get(forwardedHostHeaderKey),
-					Hostname:      removePort(r.Host),
-					IP:            r.Header.Get(forwardedForHeaderKey),
-				},
-			}).Trace("incoming request")
-
-			next.ServeHTTP(&myw, r.WithContext(ctx))
-
-			Get(ctx).WithFields(logrus.Fields{
-				"http": HTTP{
-					Request: &Request{
-						Method:    r.Method,
-						UserAgent: map[string]interface{}{"original": r.Header.Get("user-agent")},
-					},
-					Response: &Response{
-						StatusCode: myw.statusCode,
-						Body: map[string]interface{}{
-							"bytes": getBodyLength(myw),
-						},
-					},
-				},
-				"url": URL{Path: r.URL.RequestURI()},
-				"host": Host{
-					ForwardedHost: r.Header.Get(forwardedHostHeaderKey),
-					Hostname:      removePort(r.Host),
-					IP:            r.Header.Get(forwardedForHeaderKey),
-				},
-				"responseTime": float64(time.Since(start).Milliseconds()),
-			}).Info("request completed")
-		})
+		return http.HandlerFunc(HandleLog(LoggerHandler{
+			Logger:         logger,
+			ExcludedPrefix: excludedPrefix,
+			OnNext: func(rrw *ReadableResponseWriter, httpRequest *http.Request) {
+				next.ServeHTTP(rrw, httpRequest)
+			},
+		}))
 	}
 }

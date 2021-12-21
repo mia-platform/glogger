@@ -20,21 +20,21 @@ import (
 	"net/http"
 )
 
-// readableResponseWriter struct, add readable statusCode to ResponseWriter
-type readableResponseWriter struct {
+// ReadableResponseWriter struct, add readable statusCode to ResponseWriter
+type ReadableResponseWriter struct {
 	writer     http.ResponseWriter
 	statusCode int
 	length     int
 }
 
 // WriteHeader func, set statusCode parameter
-func (r *readableResponseWriter) WriteHeader(code int) {
+func (r *ReadableResponseWriter) WriteHeader(code int) {
 	r.statusCode = code
 	r.writer.WriteHeader(code)
 }
 
 // Write func, calls ResponseWriter Write fn
-func (r *readableResponseWriter) Write(b []byte) (int, error) {
+func (r *ReadableResponseWriter) Write(b []byte) (int, error) {
 	n, err := r.writer.Write(b)
 
 	if err != nil {
@@ -46,10 +46,10 @@ func (r *readableResponseWriter) Write(b []byte) (int, error) {
 }
 
 // Header func, calls ResponseWriter Header fn
-func (r *readableResponseWriter) Header() http.Header {
+func (r *ReadableResponseWriter) Header() http.Header {
 	return r.writer.Header()
 }
 
-func (r *readableResponseWriter) Length() int {
+func (r *ReadableResponseWriter) Length() int {
 	return r.length
 }
