@@ -30,7 +30,7 @@ type LoggerHandler struct {
 	OnNext         func(rrw *ReadableResponseWriter, httpRequest *http.Request)
 }
 
-func HandleLog(loggerHandler LoggerHandler) func(w http.ResponseWriter, r *http.Request) {
+func (loggerHandler LoggerHandler) EnrichWithLog() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 

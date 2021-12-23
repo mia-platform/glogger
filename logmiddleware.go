@@ -91,12 +91,13 @@ func getReqID(logger *logrus.Logger, headers http.Header) string {
 // It logs the incoming request and when request is completed, adding latency of the request
 func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(HandleLog(LoggerHandler{
+		loggerHandler := LoggerHandler{
 			Logger:         logger,
 			ExcludedPrefix: excludedPrefix,
 			OnNext: func(rrw *ReadableResponseWriter, httpRequest *http.Request) {
 				next.ServeHTTP(rrw, httpRequest)
 			},
-		}))
+		}
+		return http.HandlerFunc(loggerHandler.EnrichWithLog())
 	}
 }
