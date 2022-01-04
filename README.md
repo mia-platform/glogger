@@ -20,7 +20,7 @@ This library follow the Mia Platform logging guidelines.
 This library require golang at version >= 1.13
 
 ```sh
-go get -u github.com/mia-platform/glogger
+go get -u github.com/mia-platform/glogger/v2
 ```
 
 ## Example usage
