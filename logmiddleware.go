@@ -81,7 +81,6 @@ func getReqID(logger *logrus.Logger, headers http.Header) string {
 	}
 	// Generate a random uuid string. e.g. 16c9c1f2-c001-40d3-bbfe-48857367e7b5
 	requestID, err := uuid.NewRandom()
-	logger.WithField("requestId", requestID).Trace("generated request id")
 	if err != nil {
 		logger.WithError(err).Fatal("error generating request id")
 	}
