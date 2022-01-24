@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v2.1.2 - 24-01-2022
+
 ### Fixed
 
 - remove trace log creating request id
