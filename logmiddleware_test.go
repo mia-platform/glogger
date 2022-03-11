@@ -128,7 +128,7 @@ func TestLogMiddleware(t *testing.T) {
 		})
 		hook := testMockMiddlewareInvocation(handler, "", logger, "")
 
-		assert.Equal(t, len(hook.AllEntries()), 3, "Number of logs is not 4")
+		assert.Equal(t, len(hook.AllEntries()), 2, "Number of logs is not 2")
 		str := buffer.String()
 
 		for i, value := range strings.Split(strings.TrimSpace(str), "\n") {
@@ -403,9 +403,9 @@ func TestLogMiddleware(t *testing.T) {
 		hook := testMockMiddlewareInvocation(handler, "", nil, "")
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 3, "Unexpected entries length.")
+		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
 
-		i := 1
+		i := 0
 		incomingRequest := entries[i]
 		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
 			Level:   logrus.TraceLevel,
@@ -444,6 +444,7 @@ func TestLogMiddleware(t *testing.T) {
 }
 
 func logAssertions(t *testing.T, logEntry *logrus.Entry, expected ExpectedLogFields) string {
+	t.Helper()
 	assert.Equal(t, logEntry.Level, expected.Level, "Unexpected level of log for log in incoming request")
 	assert.Equal(t, logEntry.Message, expected.Message, "Unexpected message of log for log in incoming request")
 	requestID := logEntry.Data[reqIDKey]
