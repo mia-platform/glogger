@@ -26,6 +26,7 @@ type ResponseWriterMock struct {
 	headerCalled      bool
 	writeHeaderCalled bool
 	writeCalled       bool
+	flushCalled       bool
 }
 
 func (r *ResponseWriterMock) Header() http.Header {
@@ -40,6 +41,10 @@ func (r *ResponseWriterMock) WriteHeader(status int) {
 func (r *ResponseWriterMock) Write(b []byte) (int, error) {
 	r.writeCalled = true
 	return 1, nil
+}
+
+func (r *ResponseWriterMock) Flush() {
+	r.flushCalled = true
 }
 
 func TestReadableResponseWriter(t *testing.T) {
@@ -63,5 +68,10 @@ func TestReadableResponseWriter(t *testing.T) {
 	myw.Header()
 	if !mock.headerCalled {
 		t.Errorf("mock header not called")
+	}
+
+	myw.Flush()
+	if !mock.flushCalled {
+		t.Errorf("mock flush not called")
 	}
 }

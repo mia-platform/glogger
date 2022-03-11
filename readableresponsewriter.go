@@ -53,3 +53,10 @@ func (r *readableResponseWriter) Header() http.Header {
 func (r *readableResponseWriter) Length() int {
 	return r.length
 }
+
+// Flush to implement http.Flusher interface
+func (r *readableResponseWriter) Flush() {
+	if flusherWriter, ok := r.writer.(http.Flusher); ok {
+		flusherWriter.Flush()
+	}
+}
