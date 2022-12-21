@@ -63,7 +63,7 @@ func testMockMiddlewareInvocation(next http.HandlerFunc, requestID string, logge
 	if logger != nil {
 		hook = test.NewLocal(logger)
 	}
-	handler := RequestMiddlewareLogger(logger, []string{"/-/"})
+	handler := RequestMuxMiddlewareLogger(logger, []string{"/-/"})
 	// invoke the handler
 	server := handler(next)
 	// Create a response writer

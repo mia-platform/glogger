@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -75,8 +76,8 @@ func getBodyLength(myw readableResponseWriter) int {
 	return myw.Length()
 }
 
-func getReqID(logger *logrus.Logger, headers http.Header) string {
-	if requestID := headers.Get("X-Request-Id"); requestID != "" {
+func getReqID(logger *logrus.Logger, getHeader func(string) string) string {
+	if requestID := getHeader("X-Request-Id"); requestID != "" {
 		return requestID
 	}
 	// Generate a random uuid string. e.g. 16c9c1f2-c001-40d3-bbfe-48857367e7b5
@@ -87,14 +88,14 @@ func getReqID(logger *logrus.Logger, headers http.Header) string {
 	return requestID.String()
 }
 
-// RequestMiddlewareLogger is a gorilla/mux middleware to log all requests with logrus
+// RequestMuxMiddlewareLogger is a gorilla/mux middleware to log all requests with logrus
 // It logs the incoming request and when request is completed, adding latency of the request
-func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux.MiddlewareFunc {
+func RequestMuxMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
-			requestID := getReqID(logger, r.Header)
+			requestID := getReqID(logger, r.Header.Get)
 			ctx := WithLogger(r.Context(), logrus.NewEntry(logger).WithFields(logrus.Fields{
 				"reqId": requestID,
 			}))
@@ -147,5 +148,58 @@ func RequestMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) mux
 				"responseTime": float64(time.Since(start).Milliseconds()),
 			}).Info("request completed")
 		})
+	}
+}
+
+func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) func(*fiber.Ctx) error {
+	return func(fiberCtx *fiber.Ctx) error {
+		start := time.Now()
+
+		requestID := getReqID(logger, func(name string) string { return fiberCtx.Get(name, "") })
+		ctx := WithLogger(fiberCtx.UserContext(), logrus.NewEntry(logger).WithFields(logrus.Fields{
+			"reqId": requestID,
+		}))
+		fiberCtx.SetUserContext(ctx)
+
+		Get(ctx).WithFields(logrus.Fields{
+			"http": HTTP{
+				Request: &Request{
+					Method:    fiberCtx.Method(),
+					UserAgent: map[string]interface{}{"original": fiberCtx.Get("user-agent")},
+				},
+			},
+			"url": URL{Path: fiberCtx.Request().URI().String()},
+			"host": Host{
+				ForwardedHost: fiberCtx.Get(forwardedHostHeaderKey),
+				Hostname:      removePort(string(fiberCtx.Request().Host())),
+				IP:            fiberCtx.Get(forwardedForHeaderKey),
+			},
+		}).Trace("incoming request")
+
+		fiberCtx.Next()
+
+		Get(ctx).WithFields(logrus.Fields{
+			"http": HTTP{
+				Request: &Request{
+					Method:    fiberCtx.Method(),
+					UserAgent: map[string]interface{}{"original": fiberCtx.Get("user-agent")},
+				},
+				Response: &Response{
+					StatusCode: fiberCtx.Response().StatusCode(),
+					Body: map[string]interface{}{
+						"bytes": len(fiberCtx.Response().Body()),
+					},
+				},
+			},
+			"url": URL{Path: fiberCtx.Request().URI().String()},
+			"host": Host{
+				ForwardedHost: fiberCtx.Get(forwardedHostHeaderKey),
+				Hostname:      removePort(string(fiberCtx.Request().Host())),
+				IP:            fiberCtx.Get(forwardedForHeaderKey),
+			},
+			"responseTime": float64(time.Since(start).Milliseconds()),
+		}).Info("request completed")
+
+		return nil
 	}
 }
