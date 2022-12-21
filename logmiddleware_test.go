@@ -446,16 +446,11 @@ func TestMuxLogMiddleware(t *testing.T) {
 }
 
 func TestFiberLogMiddleware(t *testing.T) {
-	var buffer bytes.Buffer
 	app := fiber.New()
 	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(c)
 
-	log, err := InitHelper(InitOptions{
-		Level: logrus.TraceLevel.String(),
-	})
-	log.Out = &buffer
-	assert.NilError(t, err)
+	log, hook := test.NewNullLogger()
 
 	app.Use(RequestFiberMiddlewareLogger(log, nil))
 	called := false
@@ -465,11 +460,11 @@ func TestFiberLogMiddleware(t *testing.T) {
 	})
 
 	req := httptest.NewRequest("GET", "/test", nil)
-	_, err = app.Test(req)
+	_, err := app.Test(req)
 	assert.NilError(t, err)
 
 	assert.Equal(t, called, true)
-	t.Log(buffer.String())
+	t.Log(hook.AllEntries()[0])
 }
 
 func logAssertions(t *testing.T, logEntry *logrus.Entry, expected ExpectedLogFields) string {
