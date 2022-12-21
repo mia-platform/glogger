@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -115,65 +114,4 @@ func logAfterHandler(ctx LoggingContext, startTime time.Time) {
 		},
 		"responseTime": float64(time.Since(startTime).Milliseconds()),
 	}).Info("request completed")
-}
-
-func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) func(*fiber.Ctx) error {
-	return func(fiberCtx *fiber.Ctx) error {
-		requestURI := fiberCtx.Request().URI().String()
-
-		for _, prefix := range excludedPrefix {
-			if strings.HasPrefix(requestURI, prefix) {
-				return fiberCtx.Next()
-			}
-		}
-
-		start := time.Now()
-
-		requestID := getReqID(logger, func(name string) string { return fiberCtx.Get(name, "") })
-		ctx := WithLogger(fiberCtx.UserContext(), logrus.NewEntry(logger).WithFields(logrus.Fields{
-			"reqId": requestID,
-		}))
-		fiberCtx.SetUserContext(ctx)
-
-		Get(ctx).WithFields(logrus.Fields{
-			"http": HTTP{
-				Request: &Request{
-					Method:    fiberCtx.Method(),
-					UserAgent: map[string]interface{}{"original": fiberCtx.Get("user-agent")},
-				},
-			},
-			"url": URL{Path: requestURI},
-			"host": Host{
-				ForwardedHost: fiberCtx.Get(forwardedHostHeaderKey),
-				Hostname:      removePort(string(fiberCtx.Request().Host())),
-				IP:            fiberCtx.Get(forwardedForHeaderKey),
-			},
-		}).Trace("incoming request")
-
-		err := fiberCtx.Next()
-
-		Get(ctx).WithFields(logrus.Fields{
-			"http": HTTP{
-				Request: &Request{
-					Method:    fiberCtx.Method(),
-					UserAgent: map[string]interface{}{"original": fiberCtx.Get("user-agent")},
-				},
-				Response: &Response{
-					StatusCode: fiberCtx.Response().StatusCode(),
-					Body: map[string]interface{}{
-						"bytes": len(fiberCtx.Response().Body()),
-					},
-				},
-			},
-			"url": URL{Path: requestURI},
-			"host": Host{
-				ForwardedHost: fiberCtx.Get(forwardedHostHeaderKey),
-				Hostname:      removePort(string(fiberCtx.Request().Host())),
-				IP:            fiberCtx.Get(forwardedForHeaderKey),
-			},
-			"responseTime": float64(time.Since(start).Milliseconds()),
-		}).Info("request completed")
-
-		return err
-	}
 }
