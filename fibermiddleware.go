@@ -31,7 +31,7 @@ func (flc *fiberLoggingContext) GetHeader(key string) string {
 }
 
 func (flc *fiberLoggingContext) URI() string {
-	return string(flc.c.Request().URI().PathOriginal())
+	return string(flc.c.Request().URI().RequestURI())
 }
 
 func (flc *fiberLoggingContext) Host() string {
@@ -57,10 +57,10 @@ func (flc *fiberLoggingContext) StatusCode() int {
 
 func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) func(*fiber.Ctx) error {
 	return func(fiberCtx *fiber.Ctx) error {
-		requestURI := fiberCtx.Request().URI().String()
+		fiberLoggingContext := &fiberLoggingContext{fiberCtx}
 
 		for _, prefix := range excludedPrefix {
-			if strings.HasPrefix(requestURI, prefix) {
+			if strings.HasPrefix(fiberLoggingContext.Request().URI(), prefix) {
 				return fiberCtx.Next()
 			}
 		}
@@ -72,8 +72,6 @@ func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string
 			"reqId": requestID,
 		}))
 		fiberCtx.SetUserContext(ctx)
-
-		fiberLoggingContext := &fiberLoggingContext{fiberCtx}
 
 		logBeforeHandler(fiberLoggingContext)
 		err := fiberCtx.Next()

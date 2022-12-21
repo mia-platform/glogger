@@ -311,7 +311,6 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 		const pathWithQuery = "/my-req?foo=bar&some=other"
-		var requestPathWithoutPort = fmt.Sprintf("http://%s%s", hostname, pathWithQuery)
 
 		logger, _ := InitHelper(InitOptions{
 			DisableHTMLEscape: true,
@@ -319,7 +318,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, requestID, logger, requestPathWithoutPort)
+		}, requestID, logger, pathWithQuery)
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
