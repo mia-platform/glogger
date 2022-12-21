@@ -18,11 +18,11 @@ func (flc *fiberLoggingContext) Context() context.Context {
 	return flc.c.UserContext()
 }
 
-func (flc *fiberLoggingContext) Request() RequestLoggingContext {
+func (flc *fiberLoggingContext) Request() requestLoggingContext {
 	return flc
 }
 
-func (flc *fiberLoggingContext) Response() ResponseLoggingContext {
+func (flc *fiberLoggingContext) Response() responseLoggingContext {
 	return flc
 }
 

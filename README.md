@@ -11,7 +11,7 @@
 **Glogger is the logger for mia-platform go services.**
 
 It uses [logrus](https://github.com/sirupsen/logrus) as logging library,
-and implements a middleware to be used with [http gorilla mux router](https://github.com/gorilla/mux).
+and implements a middleware to be used with [http gorilla mux router](https://github.com/gorilla/mux) and [fiber](https://github.com/gofiber/fiber).
 
 This library follow the Mia Platform logging guidelines.
 
@@ -44,7 +44,7 @@ Init log middleware for [mux router](https://github.com/gorilla/mux). This log t
 
 ```go
 r := mux.NewRouter()
-r.Use(glogger.RequestMiddlewareLogger(log, nil))
+r.Use(glogger.RequestMuxMiddlewareLogger(log, nil))
 ```
 
 and, to retrieve logger injected in request context:
@@ -58,13 +58,13 @@ func(w http.ResponseWriter, req *http.Request) {
 
 #### with excluded path
 
-You can restrict the path where the logger middleware take effect using the second paramenter in `RequestMiddlewareLogger`. For example, this could be useful to exclude `incoming request` and `request completed` logging in path router.
+You can restrict the path where the logger middleware take effect using the second paramenter in `RequestMuxMiddlewareLogger`. For example, this could be useful to exclude `incoming request` and `request completed` logging in path router.
 
 Logger function is injected anyway in request context.
 
 ```go
 r := mux.NewRouter()
-r.Use(glogger.RequestMiddlewareLogger(log, []string{"/-/"}))
+r.Use(glogger.RequestMuxMiddlewareLogger(log, []string{"/-/"}))
 ```
 
 ## How to log error message

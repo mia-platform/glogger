@@ -21,11 +21,11 @@ func (mlc *muxLoggingContext) Context() context.Context {
 	return mlc.ctx
 }
 
-func (mlc *muxLoggingContext) Request() RequestLoggingContext {
+func (mlc *muxLoggingContext) Request() requestLoggingContext {
 	return &muxRequestLoggingContext{mlc.req}
 }
 
-func (mlc *muxLoggingContext) Response() ResponseLoggingContext {
+func (mlc *muxLoggingContext) Response() responseLoggingContext {
 	return &muxResponseLoggingContext{mlc.res}
 }
 

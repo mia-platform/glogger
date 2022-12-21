@@ -2,20 +2,20 @@ package glogger
 
 import "context"
 
-type LoggingContext interface {
+type loggingContext interface {
 	Context() context.Context
-	Request() RequestLoggingContext
-	Response() ResponseLoggingContext
+	Request() requestLoggingContext
+	Response() responseLoggingContext
 }
 
-type RequestLoggingContext interface {
+type requestLoggingContext interface {
 	GetHeader(string) string
 	URI() string
 	Host() string
 	Method() string
 }
 
-type ResponseLoggingContext interface {
+type responseLoggingContext interface {
 	BodySize() int
 	StatusCode() int
 }

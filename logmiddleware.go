@@ -75,7 +75,7 @@ func getReqID(logger *logrus.Logger, getHeader func(string) string) string {
 	return requestID.String()
 }
 
-func logBeforeHandler(ctx LoggingContext) {
+func logBeforeHandler(ctx loggingContext) {
 	Get(ctx.Context()).WithFields(logrus.Fields{
 		"http": HTTP{
 			Request: &Request{
@@ -92,7 +92,7 @@ func logBeforeHandler(ctx LoggingContext) {
 	}).Trace("incoming request")
 }
 
-func logAfterHandler(ctx LoggingContext, startTime time.Time) {
+func logAfterHandler(ctx loggingContext, startTime time.Time) {
 	Get(ctx.Context()).WithFields(logrus.Fields{
 		"http": HTTP{
 			Request: &Request{
