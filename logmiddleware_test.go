@@ -26,8 +26,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/valyala/fasthttp"
 	"gotest.tools/assert"
 )
 
@@ -106,7 +108,7 @@ type ExpectedOutcomingLogFields struct {
 	StatusCode    int
 }
 
-func TestLogMiddleware(t *testing.T) {
+func TestMuxLogMiddleware(t *testing.T) {
 	t.Run("create a middleware", func(t *testing.T) {
 		called := false
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -441,6 +443,33 @@ func TestLogMiddleware(t *testing.T) {
 
 		hook.Reset()
 	})
+}
+
+func TestFiberLogMiddleware(t *testing.T) {
+	var buffer bytes.Buffer
+	app := fiber.New()
+	c := app.AcquireCtx(&fasthttp.RequestCtx{})
+	defer app.ReleaseCtx(c)
+
+	log, err := InitHelper(InitOptions{
+		Level: logrus.TraceLevel.String(),
+	})
+	log.Out = &buffer
+	assert.NilError(t, err)
+
+	app.Use(RequestFiberMiddlewareLogger(log, nil))
+	called := false
+	app.Get("/test", func(c *fiber.Ctx) error {
+		called = true
+		return nil
+	})
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	_, err = app.Test(req)
+	assert.NilError(t, err)
+
+	assert.Equal(t, called, true)
+	t.Log(buffer.String())
 }
 
 func logAssertions(t *testing.T, logEntry *logrus.Entry, expected ExpectedLogFields) string {
