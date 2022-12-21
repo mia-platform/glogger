@@ -16,7 +16,7 @@ import (
 	"gotest.tools/assert"
 )
 
-func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, logger *logrus.Logger, requestPath string) (*test.Hook, error) {
+func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, logger *logrus.Logger, requestPath string) *test.Hook {
 	if requestPath == "" {
 		requestPath = "/my-req"
 	}
@@ -45,9 +45,9 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 	app.Use(RequestFiberMiddlewareLogger(logger, []string{"/-/"}))
 	app.Get(requestPath, handler)
 
-	_, err := app.Test(req)
+	app.Test(req)
 
-	return hook, err
+	return hook
 }
 
 func TestFiberLogMiddleware(t *testing.T) {
@@ -67,7 +67,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		logger, _ := InitHelper(InitOptions{Level: "trace"})
 		logger.Out = &buffer
 		const logMessage = "New log message"
-		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			ctx := context.WithValue(c.UserContext(), loggerKey{}, "notALogger")
 			Get(ctx).Info(logMessage)
 			return nil
@@ -86,7 +86,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const statusCode = 400
 		const requestID = "my-req-id"
 
-		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, requestID, nil, "")
@@ -137,7 +137,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 
-		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			c.Set("content-length", "10")
 			return nil
@@ -190,7 +190,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const requestID = "my-req-id"
 		contentToWrite := []byte("testing\n")
 
-		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			c.Write(contentToWrite)
 			return nil
@@ -243,7 +243,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const requestID = "my-req-id"
 
 		logger, _ := test.NewNullLogger()
-		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, requestID, logger, "")
@@ -278,7 +278,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		var requestPathWithoutPort = fmt.Sprintf("http://%s/my-req", hostname)
 
 		logger, _ := test.NewNullLogger()
-		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, requestID, logger, requestPathWithoutPort)
@@ -315,7 +315,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		logger, _ := InitHelper(InitOptions{
 			DisableHTMLEscape: true,
 		})
-		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, requestID, logger, pathWithQuery)
@@ -333,7 +333,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 
-		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, requestID, nil, "/-/healthz")
@@ -347,7 +347,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 	t.Run("middleware correctly create request id if not present in header", func(t *testing.T) {
 		const statusCode = 400
 
-		hook, _ := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, "", nil, "")
