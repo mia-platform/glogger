@@ -31,7 +31,7 @@ func (flc *fiberLoggingContext) GetHeader(key string) string {
 }
 
 func (flc *fiberLoggingContext) URI() string {
-	return flc.c.Request().URI().String()
+	return string(flc.c.Request().URI().PathOriginal())
 }
 
 func (flc *fiberLoggingContext) Host() string {
@@ -43,7 +43,7 @@ func (flc *fiberLoggingContext) Method() string {
 }
 
 func (flc *fiberLoggingContext) BodySize() int {
-	if content := flc.c.Get("Content-Length"); content != "" {
+	if content := flc.c.GetRespHeader("Content-Length"); content != "" {
 		if length, err := strconv.Atoi(content); err == nil {
 			return length
 		}

@@ -42,7 +42,7 @@ const clientHost = "client-host"
 var ip string
 var defaultRequestPath = fmt.Sprintf("http://%s:%s/my-req", hostname, port)
 
-func testMockMiddlewareInvocation(next http.HandlerFunc, requestID string, logger *logrus.Logger, requestPath string) *test.Hook {
+func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, logger *logrus.Logger, requestPath string) *test.Hook {
 	if requestPath == "" {
 		requestPath = defaultRequestPath
 	}
@@ -112,7 +112,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			called = true
 		})
-		testMockMiddlewareInvocation(handler, "", nil, "")
+		testMockMuxMiddlewareInvocation(handler, "", nil, "")
 
 		assert.Assert(t, called, "handler is not called")
 	})
@@ -126,7 +126,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			ctx := context.WithValue(r.Context(), loggerKey{}, "notALogger")
 			Get(ctx).Info(logMessage)
 		})
-		hook := testMockMiddlewareInvocation(handler, "", logger, "")
+		hook := testMockMuxMiddlewareInvocation(handler, "", logger, "")
 
 		assert.Equal(t, len(hook.AllEntries()), 2, "Number of logs is not 2")
 		str := buffer.String()
@@ -143,7 +143,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 		})
-		hook := testMockMiddlewareInvocation(handler, requestID, nil, "")
+		hook := testMockMuxMiddlewareInvocation(handler, requestID, nil, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
@@ -194,7 +194,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			w.WriteHeader(statusCode)
 			w.Header().Set("content-length", "10")
 		})
-		hook := testMockMiddlewareInvocation(handler, requestID, nil, "")
+		hook := testMockMuxMiddlewareInvocation(handler, requestID, nil, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
@@ -246,7 +246,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			w.WriteHeader(statusCode)
 			w.Write(contentToWrite)
 		})
-		hook := testMockMiddlewareInvocation(handler, requestID, nil, "")
+		hook := testMockMuxMiddlewareInvocation(handler, requestID, nil, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
@@ -297,7 +297,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			w.WriteHeader(statusCode)
 		})
 		logger, _ := test.NewNullLogger()
-		hook := testMockMiddlewareInvocation(handler, requestID, logger, "")
+		hook := testMockMuxMiddlewareInvocation(handler, requestID, logger, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
@@ -332,7 +332,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			w.WriteHeader(statusCode)
 		})
 		logger, _ := test.NewNullLogger()
-		hook := testMockMiddlewareInvocation(handler, requestID, logger, requestPathWithoutPort)
+		hook := testMockMuxMiddlewareInvocation(handler, requestID, logger, requestPathWithoutPort)
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
@@ -370,7 +370,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		logger, _ := InitHelper(InitOptions{
 			DisableHTMLEscape: true,
 		})
-		hook := testMockMiddlewareInvocation(handler, requestID, logger, requestPathWithoutPort)
+		hook := testMockMuxMiddlewareInvocation(handler, requestID, logger, requestPathWithoutPort)
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
@@ -387,7 +387,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 		})
-		hook := testMockMiddlewareInvocation(handler, requestID, nil, "/-/healthz")
+		hook := testMockMuxMiddlewareInvocation(handler, requestID, nil, "/-/healthz")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 0, "Unexpected entries length.")
@@ -400,7 +400,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 		})
-		hook := testMockMiddlewareInvocation(handler, "", nil, "")
+		hook := testMockMuxMiddlewareInvocation(handler, "", nil, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
