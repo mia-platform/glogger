@@ -46,7 +46,7 @@ func (mrlc *muxRequestLoggingContext) Host() string {
 }
 
 func (mrlc *muxRequestLoggingContext) Method() string {
-	return mrlc.req.Host
+	return mrlc.req.Method
 }
 
 type muxResponseLoggingContext struct {
