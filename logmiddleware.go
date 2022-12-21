@@ -153,6 +153,14 @@ func RequestMuxMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) 
 
 func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) func(*fiber.Ctx) error {
 	return func(fiberCtx *fiber.Ctx) error {
+		requestURI := fiberCtx.Request().URI().String()
+
+		for _, prefix := range excludedPrefix {
+			if strings.HasPrefix(requestURI, prefix) {
+				return fiberCtx.Next()
+			}
+		}
+
 		start := time.Now()
 
 		requestID := getReqID(logger, func(name string) string { return fiberCtx.Get(name, "") })
@@ -168,7 +176,7 @@ func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string
 					UserAgent: map[string]interface{}{"original": fiberCtx.Get("user-agent")},
 				},
 			},
-			"url": URL{Path: fiberCtx.Request().URI().String()},
+			"url": URL{Path: requestURI},
 			"host": Host{
 				ForwardedHost: fiberCtx.Get(forwardedHostHeaderKey),
 				Hostname:      removePort(string(fiberCtx.Request().Host())),
@@ -176,7 +184,7 @@ func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string
 			},
 		}).Trace("incoming request")
 
-		fiberCtx.Next()
+		err := fiberCtx.Next()
 
 		Get(ctx).WithFields(logrus.Fields{
 			"http": HTTP{
@@ -191,7 +199,7 @@ func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string
 					},
 				},
 			},
-			"url": URL{Path: fiberCtx.Request().URI().String()},
+			"url": URL{Path: requestURI},
 			"host": Host{
 				ForwardedHost: fiberCtx.Get(forwardedHostHeaderKey),
 				Hostname:      removePort(string(fiberCtx.Request().Host())),
@@ -200,6 +208,6 @@ func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string
 			"responseTime": float64(time.Since(start).Milliseconds()),
 		}).Info("request completed")
 
-		return nil
+		return err
 	}
 }
