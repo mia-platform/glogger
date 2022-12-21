@@ -55,6 +55,8 @@ func (flc *fiberLoggingContext) StatusCode() int {
 	return flc.c.Response().StatusCode()
 }
 
+// RequestFiberMiddlewareLogger is a gorilla/mux middleware to log all requests with logrus
+// It logs the incoming request and when request is completed, adding latency of the request
 func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) func(*fiber.Ctx) error {
 	return func(fiberCtx *fiber.Ctx) error {
 		fiberLoggingContext := &fiberLoggingContext{fiberCtx}
