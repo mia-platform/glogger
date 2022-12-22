@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Updated
 
-- `golang@1.18`
+- `golang@1.19`
 
 ## v2.1.3 - 11-03-2022
 

@@ -6,7 +6,7 @@ jobs:
      runs-on: [ubuntu-latest]
      strategy:
        matrix:
-         go_version: [1.18]
+         go_version: [1.19]
      steps:
        - uses: actions/checkout@v1
        - name: Use golang ${{ matrix.go_version }}
@@ -27,7 +27,7 @@ jobs:
           go test ./... -count=1 -race -cover
 
        - name: Build
-         if: matrix.go_version == 1.18
+         if: matrix.go_version == 1.19
          run: |
            go build -v .
 

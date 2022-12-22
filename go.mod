@@ -1,6 +1,6 @@
 module github.com/mia-platform/glogger/v2
 
-go 1.18
+go 1.19
 
 require (
 	github.com/gofiber/fiber/v2 v2.40.1
