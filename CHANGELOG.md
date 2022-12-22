@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### BREAKING CHANGES
 
-- renamed `RequestMiddlewareLogger` to `RequestMuxMiddlewareLogger` to distinguish between `fiber` and `mux`.
+- renamed `RequestMiddlewareLogger` to `RequestGorillaMuxMiddlewareLogger` to distinguish between `fiber` and `mux`.
 
 ### Added
 

@@ -64,7 +64,7 @@ func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, lo
 	if logger != nil {
 		hook = test.NewLocal(logger)
 	}
-	handler := RequestMuxMiddlewareLogger(logger, []string{"/-/"})
+	handler := RequestGorillaMuxMiddlewareLogger(logger, []string{"/-/"})
 	// invoke the handler
 	server := handler(next)
 	// Create a response writer

@@ -44,7 +44,7 @@ Init log middleware for [mux router](https://github.com/gorilla/mux). This log t
 
 ```go
 r := mux.NewRouter()
-r.Use(glogger.RequestMuxMiddlewareLogger(log, nil))
+r.Use(glogger.RequestGorillaMuxMiddlewareLogger(log, nil))
 ```
 
 and, to retrieve logger injected in request context:
@@ -74,13 +74,13 @@ func(c *fiber.Ctx) {
 
 #### with excluded path
 
-You can restrict the path where the logger middleware take effect using the second paramenter in `RequestMuxMiddlewareLogger`. For example, this could be useful to exclude `incoming request` and `request completed` logging in path router.
+You can restrict the path where the logger middleware take effect using the second paramenter in `RequestGorillaMuxMiddlewareLogger`. For example, this could be useful to exclude `incoming request` and `request completed` logging in path router.
 
 Logger function is injected anyway in request context.
 
 ```go
 r := mux.NewRouter()
-r.Use(glogger.RequestMuxMiddlewareLogger(log, []string{"/-/"}))
+r.Use(glogger.RequestGorillaMuxMiddlewareLogger(log, []string{"/-/"}))
 ```
 
 ## How to log error message
