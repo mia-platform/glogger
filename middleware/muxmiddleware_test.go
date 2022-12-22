@@ -17,6 +17,8 @@
 package middleware
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -116,25 +118,24 @@ func TestMuxLogMiddleware(t *testing.T) {
 		assert.Assert(t, called, "handler is not called")
 	})
 
-	// t.Run("log is a JSON also with trouble getting logger from context", func(t *testing.T) {
-	// 	var buffer bytes.Buffer
-	// 	logger, _ := glogger.InitHelper(glogger.InitOptions{Level: "trace"})
-	// 	logger.Out = &buffer
-	// 	const logMessage = "New log message"
-	// 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 		ctx := context.WithValue(r.Context(), loggerKey{}, "notALogger")
-	// 		glogger.Get(ctx).Info(logMessage)
-	// 	})
-	// 	hook := testMockMuxMiddlewareInvocation(handler, "", logger, "")
+	t.Run("log is a JSON also with trouble getting logger from context", func(t *testing.T) {
+		var buffer bytes.Buffer
+		logger, _ := glogger.InitHelper(glogger.InitOptions{Level: "trace"})
+		logger.Out = &buffer
+		const logMessage = "New log message"
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			glogger.Get(context.Background()).Info(logMessage)
+		})
+		hook := testMockMuxMiddlewareInvocation(handler, "", logger, "")
 
-	// 	assert.Equal(t, len(hook.AllEntries()), 2, "Number of logs is not 2")
-	// 	str := buffer.String()
+		assert.Equal(t, len(hook.AllEntries()), 2, "Number of logs is not 2")
+		str := buffer.String()
 
-	// 	for i, value := range strings.Split(strings.TrimSpace(str), "\n") {
-	// 		err := assertJSON(t, value)
-	// 		assert.Equal(t, err, nil, "log %d is not a JSON", i)
-	// 	}
-	// })
+		for i, value := range strings.Split(strings.TrimSpace(str), "\n") {
+			err := assertJSON(t, value)
+			assert.Equal(t, err, nil, "log %d is not a JSON", i)
+		}
+	})
 
 	t.Run("middleware correctly passing configured logger with request id from request header", func(t *testing.T) {
 		const statusCode = 400
