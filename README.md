@@ -60,7 +60,7 @@ With [fiber](https://github.com/gofiber/fiber), you can setup the middleware in 
 
 ```go
 app := fiber.New()
-app.Use(glogger.RequestMuxMiddlewareLogger())
+app.Use(glogger.RequestFiberMiddlewareLogger())
 ```
 
 And then retrieve it from the handler's context like this:
