@@ -72,12 +72,17 @@ func RequestMuxMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
+			myw := readableResponseWriter{writer: w, statusCode: http.StatusOK}
+			muxLoggingContext := &muxLoggingContext{
+				req: r,
+				res: &myw,
+			}
 
-			requestID := getReqID(logger, r.Header.Get)
+			requestID := getReqID(logger, muxLoggingContext)
 			ctx := WithLogger(r.Context(), logrus.NewEntry(logger).WithFields(logrus.Fields{
 				"reqId": requestID,
 			}))
-			myw := readableResponseWriter{writer: w, statusCode: http.StatusOK}
+			muxLoggingContext.ctx = ctx
 
 			// Skip logging for excluded routes
 			for _, prefix := range excludedPrefix {
@@ -85,12 +90,6 @@ func RequestMuxMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) 
 					next.ServeHTTP(&myw, r.WithContext(ctx))
 					return
 				}
-			}
-
-			muxLoggingContext := &muxLoggingContext{
-				ctx: ctx,
-				req: r,
-				res: &myw,
 			}
 
 			logBeforeHandler(muxLoggingContext)

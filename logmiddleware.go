@@ -63,8 +63,8 @@ func removePort(host string) string {
 	return strings.Split(host, ":")[0]
 }
 
-func getReqID(logger *logrus.Logger, getHeader func(string) string) string {
-	if requestID := getHeader("X-Request-Id"); requestID != "" {
+func getReqID(logger *logrus.Logger, ctx loggingContext) string {
+	if requestID := ctx.Request().GetHeader("X-Request-Id"); requestID != "" {
 		return requestID
 	}
 	// Generate a random uuid string. e.g. 16c9c1f2-c001-40d3-bbfe-48857367e7b5

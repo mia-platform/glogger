@@ -69,7 +69,7 @@ func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string
 
 		start := time.Now()
 
-		requestID := getReqID(logger, func(name string) string { return fiberCtx.Get(name, "") })
+		requestID := getReqID(logger, fiberLoggingContext)
 		ctx := WithLogger(fiberCtx.UserContext(), logrus.NewEntry(logger).WithFields(logrus.Fields{
 			"reqId": requestID,
 		}))
