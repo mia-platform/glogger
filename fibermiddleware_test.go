@@ -329,7 +329,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook.Reset()
 	})
 
-	t.Run("middleware correctly passing configured logger with request id from request header", func(t *testing.T) {
+	t.Run("do not log skipped paths", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 
