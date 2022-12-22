@@ -56,6 +56,22 @@ func(w http.ResponseWriter, req *http.Request) {
 }
 ```
 
+With [fiber](https://github.com/gofiber/fiber), you can setup the middleware in this way:
+
+```go
+app := fiber.New()
+app.Use(glogger.RequestMuxMiddlewareLogger())
+```
+
+And then retrieve it from the handler's context like this:
+
+```go
+func(c *fiber.Ctx) {
+  loggerFn := glogger.Get(c.UserContext())
+  loggerFn.Info("log message")
+}
+```
+
 #### with excluded path
 
 You can restrict the path where the logger middleware take effect using the second paramenter in `RequestMuxMiddlewareLogger`. For example, this could be useful to exclude `incoming request` and `request completed` logging in path router.
