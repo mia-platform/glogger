@@ -1,4 +1,4 @@
-package glogger
+package middleware
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/mia-platform/glogger/v2"
 	"github.com/sirupsen/logrus"
 )
 
@@ -70,7 +71,7 @@ func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string
 		start := time.Now()
 
 		requestID := getReqID(logger, fiberLoggingContext)
-		ctx := WithLogger(fiberCtx.UserContext(), logrus.NewEntry(logger).WithFields(logrus.Fields{
+		ctx := glogger.WithLogger(fiberCtx.UserContext(), logrus.NewEntry(logger).WithFields(logrus.Fields{
 			"reqId": requestID,
 		}))
 		fiberCtx.SetUserContext(ctx)

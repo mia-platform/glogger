@@ -1,4 +1,4 @@
-package glogger
+package middleware
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/mia-platform/glogger/v2"
 	"github.com/sirupsen/logrus"
 )
 
@@ -79,7 +80,7 @@ func RequestMuxMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string) 
 			}
 
 			requestID := getReqID(logger, muxLoggingContext)
-			ctx := WithLogger(r.Context(), logrus.NewEntry(logger).WithFields(logrus.Fields{
+			ctx := glogger.WithLogger(r.Context(), logrus.NewEntry(logger).WithFields(logrus.Fields{
 				"reqId": requestID,
 			}))
 			muxLoggingContext.ctx = ctx

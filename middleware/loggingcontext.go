@@ -1,4 +1,4 @@
-package glogger
+package middleware
 
 import "context"
 

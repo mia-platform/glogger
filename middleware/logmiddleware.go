@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package glogger
+package middleware
 
 import (
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mia-platform/glogger/v2"
 	"github.com/sirupsen/logrus"
 )
 
@@ -76,7 +77,7 @@ func getReqID(logger *logrus.Logger, ctx loggingContext) string {
 }
 
 func logBeforeHandler(ctx loggingContext) {
-	Get(ctx.Context()).WithFields(logrus.Fields{
+	glogger.Get(ctx.Context()).WithFields(logrus.Fields{
 		"http": HTTP{
 			Request: &Request{
 				Method:    ctx.Request().Method(),
@@ -93,7 +94,7 @@ func logBeforeHandler(ctx loggingContext) {
 }
 
 func logAfterHandler(ctx loggingContext, startTime time.Time) {
-	Get(ctx.Context()).WithFields(logrus.Fields{
+	glogger.Get(ctx.Context()).WithFields(logrus.Fields{
 		"http": HTTP{
 			Request: &Request{
 				Method:    ctx.Request().Method(),
