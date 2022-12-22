@@ -361,6 +361,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			Level:   logrus.TraceLevel,
 			Message: "incoming request",
 		})
+		assert.Assert(t, incomingRequestID != "")
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
