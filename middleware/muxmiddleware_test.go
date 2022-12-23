@@ -26,7 +26,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mia-platform/glogger/v2"
+	"github.com/mia-platform/glogger/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gotest.tools/assert"

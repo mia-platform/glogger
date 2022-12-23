@@ -1,4 +1,4 @@
-module github.com/mia-platform/glogger/v2
+module github.com/mia-platform/glogger/v3
 
 go 1.19
 

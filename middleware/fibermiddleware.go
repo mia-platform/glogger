@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mia-platform/glogger/v2"
+	"github.com/mia-platform/glogger/v3"
 	"github.com/sirupsen/logrus"
 )
 

@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mia-platform/glogger/v2"
+	"github.com/mia-platform/glogger/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/valyala/fasthttp"
