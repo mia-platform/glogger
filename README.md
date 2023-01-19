@@ -38,13 +38,21 @@ if err != nil {
 }
 ```
 
-### Setup log middleware
+## Setup log middleware
+
+Two middleware loggers are available in the `middleware` package of this library. To use them you need to import it:
+
+```go
+import "github.com/mia-platform/glogger/v3/middleware"
+```
+
+### Gorilla Mux
 
 Init log middleware for [mux router](https://github.com/gorilla/mux). This log the `incoming request` and `request completed` following the mia-platform guidelines.
 
 ```go
 r := mux.NewRouter()
-r.Use(glogger.RequestGorillaMuxMiddlewareLogger(log, nil))
+r.Use(middleware.RequestGorillaMuxMiddlewareLogger(log, nil))
 ```
 
 and, to retrieve logger injected in request context:
@@ -56,11 +64,13 @@ func(w http.ResponseWriter, req *http.Request) {
 }
 ```
 
+### Fiber
+
 With [fiber](https://github.com/gofiber/fiber), you can setup the middleware in this way:
 
 ```go
 app := fiber.New()
-app.Use(glogger.RequestFiberMiddlewareLogger())
+app.Use(middleware.RequestFiberMiddlewareLogger())
 ```
 
 And then retrieve it from the handler's context like this:
@@ -80,7 +90,7 @@ Logger function is injected anyway in request context.
 
 ```go
 r := mux.NewRouter()
-r.Use(glogger.RequestGorillaMuxMiddlewareLogger(log, []string{"/-/"}))
+r.Use(middleware.RequestGorillaMuxMiddlewareLogger(log, []string{"/-/"}))
 ```
 
 ## How to log error message
