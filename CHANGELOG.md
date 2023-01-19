@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### BREAKING CHANGES
 
-- renamed `RequestMiddlewareLogger` to `RequestGorillaMuxMiddlewareLogger` to distinguish between `fiber` and `mux`.
+- renamed `RequestMiddlewareLogger` to `RequestGorillaMuxMiddlewareLogger` to distinguish between `fiber` and `mux`. The function has been moved to the `middleware` subpackage.
 
 ### Added
 
