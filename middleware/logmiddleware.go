@@ -94,22 +94,23 @@ func logBeforeHandler(ctx loggingContext) {
 	}).Trace("incoming request")
 }
 
-func logAfterHandler(ctx loggingContext, startTime time.Time, fiberErr *fiber.Error) {
+func logAfterHandler(ctx loggingContext, startTime time.Time, err error) {
 	logger := glogger.Get(ctx.Context())
-
-	fiberRes := &Response{
+	res := &Response{
 		StatusCode: ctx.Response().StatusCode(),
 		Body: map[string]interface{}{
 			"bytes": ctx.Response().BodySize(),
 		},
 	}
 
-	if fiberErr != nil {
-		fiberRes = &Response{
-			StatusCode: fiberErr.Code,
-			Body: map[string]interface{}{
-				"bytes": len(fiberErr.Error()),
-			},
+	if err != nil {
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			res = &Response{
+				StatusCode: fiberErr.Code,
+				Body: map[string]interface{}{
+					"bytes": len(fiberErr.Error()),
+				},
+			}
 		}
 	}
 
@@ -119,7 +120,7 @@ func logAfterHandler(ctx loggingContext, startTime time.Time, fiberErr *fiber.Er
 				Method:    ctx.Request().Method(),
 				UserAgent: map[string]interface{}{"original": ctx.Request().GetHeader("user-agent")},
 			},
-			Response: fiberRes,
+			Response: res,
 		},
 		"url": URL{Path: ctx.Request().URI()},
 		"host": Host{
