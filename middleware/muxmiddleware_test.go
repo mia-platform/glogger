@@ -377,7 +377,6 @@ func TestMuxLogMiddleware(t *testing.T) {
 		byteEntry, err := entries[0].Bytes()
 		assert.NilError(t, err)
 		assert.Check(t, strings.Contains(string(byteEntry), `"url":{"path":"/my-req?foo=bar&some=other"}`))
-
 		hook.Reset()
 	})
 

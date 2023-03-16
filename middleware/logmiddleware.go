@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/mia-platform/glogger/v3"
 	"github.com/sirupsen/logrus"
@@ -93,19 +94,32 @@ func logBeforeHandler(ctx loggingContext) {
 	}).Trace("incoming request")
 }
 
-func logAfterHandler(ctx loggingContext, startTime time.Time) {
-	glogger.Get(ctx.Context()).WithFields(logrus.Fields{
+func logAfterHandler(ctx loggingContext, startTime time.Time, fiberErr *fiber.Error) {
+	logger := glogger.Get(ctx.Context())
+
+	fiberRes := &Response{
+		StatusCode: ctx.Response().StatusCode(),
+		Body: map[string]interface{}{
+			"bytes": ctx.Response().BodySize(),
+		},
+	}
+
+	if fiberErr != nil {
+		fiberRes = &Response{
+			StatusCode: fiberErr.Code,
+			Body: map[string]interface{}{
+				"bytes": len(fiberErr.Error()),
+			},
+		}
+	}
+
+	logger.WithFields(logrus.Fields{
 		"http": HTTP{
 			Request: &Request{
 				Method:    ctx.Request().Method(),
 				UserAgent: map[string]interface{}{"original": ctx.Request().GetHeader("user-agent")},
 			},
-			Response: &Response{
-				StatusCode: ctx.Response().StatusCode(),
-				Body: map[string]interface{}{
-					"bytes": ctx.Response().BodySize(),
-				},
-			},
+			Response: fiberRes,
 		},
 		"url": URL{Path: ctx.Request().URI()},
 		"host": Host{

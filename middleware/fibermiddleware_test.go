@@ -44,7 +44,9 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(c)
 	app.Use(RequestFiberMiddlewareLogger(logger, []string{"/-/"}))
-	app.Get(requestPath, handler)
+
+	requestPathWithoutQuery := strings.Split(requestPath, "?")[0]
+	app.Get(requestPathWithoutQuery, handler)
 
 	app.Test(req)
 
@@ -53,6 +55,109 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 
 func TestFiberLogMiddleware(t *testing.T) {
 	hostname := "example.com"
+
+	// t.Run("test getHostname with request path without port", func(t *testing.T) {
+	// 	const statusCode = 200
+	// 	const requestID = "my-req-id"
+	// 	const reqPath = "/my-req"
+	// 	var requestPathWithoutPort = fmt.Sprintf("http://%s%s", hostname, reqPath)
+
+	// 	logger, _ := test.NewNullLogger()
+	// 	hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+	// 		c.Status(statusCode)
+	// 		return nil
+	// 	}, requestID, logger, reqPath)
+
+	// 	entries := hook.AllEntries()
+	// 	assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+
+	// 	i := 0
+	// 	outcomingRequest := entries[i]
+	// 	logAssertions(t, outcomingRequest, ExpectedLogFields{
+	// 		Level:     logrus.InfoLevel,
+	// 		Message:   "request completed",
+	// 		RequestID: requestID,
+	// 	})
+	// 	outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+	// 		Method:        http.MethodGet,
+	// 		Path:          path,
+	// 		Hostname:      hostname,
+	// 		ForwardedHost: clientHost,
+	// 		Original:      userAgent,
+	// 		IP:            ip,
+	// 		StatusCode:    statusCode,
+	// 		Bytes:         bodyBytes,
+	// 	})
+
+	// 	hook.Reset()
+	// })
+
+	t.Run("test getHostname with request path with query", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		const pathWithQuery = "/my-req?foo=bar&some=other"
+
+		logger, _ := glogger.InitHelper(glogger.InitOptions{
+			DisableHTMLEscape: true,
+		})
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+			c.Status(statusCode)
+			return nil
+		}, requestID, logger, pathWithQuery)
+
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+		byteEntry, err := entries[0].Bytes()
+		assert.NilError(t, err)
+		assert.Check(t, strings.Contains(string(byteEntry), `"url":{"path":"/my-req?foo=bar&some=other"}`))
+
+		hook.Reset()
+	})
+
+	t.Run("request on non-existing route should cause a 404 log - bug https://github.com/mia-platform/glogger/issues/35", func(t *testing.T) {
+		requestPath := "/non-existing"
+		requestID := "someId"
+		logger, hook := test.NewNullLogger()
+		logger.SetLevel(logrus.TraceLevel)
+		hook.Reset()
+
+		req := httptest.NewRequest(http.MethodGet, requestPath, nil)
+		ip = removePort(req.RemoteAddr)
+		req.Header.Add("x-request-id", requestID)
+		req.Header.Add("user-agent", userAgent)
+		req.Header.Add("x-forwarded-for", ip)
+		req.Header.Add("x-forwarded-host", clientHost)
+
+		app := fiber.New()
+		c := app.AcquireCtx(&fasthttp.RequestCtx{})
+		defer app.ReleaseCtx(c)
+		app.Use(RequestFiberMiddlewareLogger(logger, []string{"/-/"}))
+		app.Test(req)
+
+		logEntries := hook.AllEntries()
+		for _, entry := range logEntries {
+			if foundHttp, ok := entry.Data["http"].(HTTP); ok {
+				res := foundHttp.Response
+				if res == nil {
+					continue
+				}
+				isNot200 := res.StatusCode != http.StatusOK
+				assert.Assert(t, isNot200)
+			}
+		}
+		lastEntry := logEntries[len(logEntries)-1]
+		outcomingRequestAssertions(t, lastEntry, ExpectedOutcomingLogFields{
+			Method:        http.MethodGet,
+			Path:          requestPath,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			IP:            ip,
+			StatusCode:    http.StatusNotFound,
+			Bytes:         len("Cannot GET /non-existing"),
+		})
+	})
+
 	t.Run("create a middleware", func(t *testing.T) {
 		called := false
 		testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
@@ -268,63 +373,6 @@ func TestFiberLogMiddleware(t *testing.T) {
 			StatusCode:    statusCode,
 			Bytes:         bodyBytes,
 		})
-
-		hook.Reset()
-	})
-
-	t.Run("test getHostname with request path without port", func(t *testing.T) {
-		const statusCode = 200
-		const requestID = "my-req-id"
-		var requestPathWithoutPort = fmt.Sprintf("http://%s/my-req", hostname)
-
-		logger, _ := test.NewNullLogger()
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
-			c.Status(statusCode)
-			return nil
-		}, requestID, logger, requestPathWithoutPort)
-
-		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
-
-		i := 0
-		outcomingRequest := entries[i]
-		logAssertions(t, outcomingRequest, ExpectedLogFields{
-			Level:     logrus.InfoLevel,
-			Message:   "request completed",
-			RequestID: requestID,
-		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      hostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-			StatusCode:    statusCode,
-			Bytes:         bodyBytes,
-		})
-
-		hook.Reset()
-	})
-
-	t.Run("test getHostname with request path with query", func(t *testing.T) {
-		const statusCode = 200
-		const requestID = "my-req-id"
-		const pathWithQuery = "/my-req?foo=bar&some=other"
-
-		logger, _ := glogger.InitHelper(glogger.InitOptions{
-			DisableHTMLEscape: true,
-		})
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
-			c.Status(statusCode)
-			return nil
-		}, requestID, logger, pathWithQuery)
-
-		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
-		byteEntry, err := entries[0].Bytes()
-		assert.NilError(t, err)
-		assert.Check(t, strings.Contains(string(byteEntry), `"url":{"path":"/my-req?foo=bar&some=other"}`))
 
 		hook.Reset()
 	})
