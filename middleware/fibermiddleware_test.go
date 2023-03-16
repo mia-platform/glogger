@@ -56,41 +56,41 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 func TestFiberLogMiddleware(t *testing.T) {
 	hostname := "example.com"
 
-	// t.Run("test getHostname with request path without port", func(t *testing.T) {
-	// 	const statusCode = 200
-	// 	const requestID = "my-req-id"
-	// 	const reqPath = "/my-req"
-	// 	var requestPathWithoutPort = fmt.Sprintf("http://%s%s", hostname, reqPath)
+	t.Run("test getHostname with request path without port", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		const reqPath = "/my-req"
+		var requestPathWithoutPort = fmt.Sprintf("http://%s%s", hostname, reqPath)
 
-	// 	logger, _ := test.NewNullLogger()
-	// 	hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
-	// 		c.Status(statusCode)
-	// 		return nil
-	// 	}, requestID, logger, reqPath)
+		logger, _ := test.NewNullLogger()
+		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+			c.Status(statusCode)
+			return nil
+		}, requestID, logger, requestPathWithoutPort)
 
-	// 	entries := hook.AllEntries()
-	// 	assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+		entries := hook.AllEntries()
+		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
 
-	// 	i := 0
-	// 	outcomingRequest := entries[i]
-	// 	logAssertions(t, outcomingRequest, ExpectedLogFields{
-	// 		Level:     logrus.InfoLevel,
-	// 		Message:   "request completed",
-	// 		RequestID: requestID,
-	// 	})
-	// 	outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
-	// 		Method:        http.MethodGet,
-	// 		Path:          path,
-	// 		Hostname:      hostname,
-	// 		ForwardedHost: clientHost,
-	// 		Original:      userAgent,
-	// 		IP:            ip,
-	// 		StatusCode:    statusCode,
-	// 		Bytes:         bodyBytes,
-	// 	})
+		i := 0
+		outcomingRequest := entries[i]
+		logAssertions(t, outcomingRequest, ExpectedLogFields{
+			Level:     logrus.InfoLevel,
+			Message:   "request completed",
+			RequestID: requestID,
+		})
+		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+			Method:        http.MethodGet,
+			Path:          path,
+			Hostname:      hostname,
+			ForwardedHost: clientHost,
+			Original:      userAgent,
+			IP:            ip,
+			StatusCode:    statusCode,
+			Bytes:         bodyBytes,
+		})
 
-	// 	hook.Reset()
-	// })
+		hook.Reset()
+	})
 
 	t.Run("test getHostname with request path with query", func(t *testing.T) {
 		const statusCode = 200
