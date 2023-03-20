@@ -40,7 +40,8 @@ const bodyBytes = 0
 const path = "/my-req"
 const clientHost = "client-host"
 
-var ip string
+const ip = "192.168.0.1"
+
 var defaultRequestPath = fmt.Sprintf("http://%s:%s/my-req", hostname, port)
 
 func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, logger *logrus.Logger, requestPath string) *test.Hook {
@@ -53,7 +54,6 @@ func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, lo
 	req.Header.Add("user-agent", userAgent)
 	req.Header.Add("x-forwarded-for", ip)
 	req.Header.Add("x-forwarded-host", clientHost)
-	ip = removePort(req.RemoteAddr)
 
 	// create a null logger
 	var hook *test.Hook
@@ -377,7 +377,6 @@ func TestMuxLogMiddleware(t *testing.T) {
 		byteEntry, err := entries[0].Bytes()
 		assert.NilError(t, err)
 		assert.Check(t, strings.Contains(string(byteEntry), `"url":{"path":"/my-req?foo=bar&some=other"}`))
-
 		hook.Reset()
 	})
 

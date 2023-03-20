@@ -95,7 +95,7 @@ func RequestGorillaMuxMiddlewareLogger(logger *logrus.Logger, excludedPrefix []s
 
 			logBeforeHandler(muxLoggingContext)
 			next.ServeHTTP(&myw, r.WithContext(ctx))
-			logAfterHandler(muxLoggingContext, start)
+			logAfterHandler(muxLoggingContext, start, nil)
 		})
 	}
 }
