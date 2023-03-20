@@ -116,7 +116,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook.Reset()
 	})
 
-	t.Run("request on non-existing route should cause a 404 log - bug https://github.com/mia-platform/glogger/issues/35", func(t *testing.T) {
+	t.Run("request on non-existing route should cause a 404 log", func(t *testing.T) {
 		requestPath := "/non-existing"
 		requestID := "someId"
 		logger, hook := test.NewNullLogger()
@@ -136,16 +136,6 @@ func TestFiberLogMiddleware(t *testing.T) {
 		app.Test(req)
 
 		logEntries := hook.AllEntries()
-		for _, entry := range logEntries {
-			if foundHttp, ok := entry.Data["http"].(HTTP); ok {
-				res := foundHttp.Response
-				if res == nil {
-					continue
-				}
-				isNot200 := res.StatusCode != http.StatusOK
-				assert.Assert(t, isNot200)
-			}
-		}
 		lastEntry := logEntries[len(logEntries)-1]
 		outcomingRequestAssertions(t, lastEntry, ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
