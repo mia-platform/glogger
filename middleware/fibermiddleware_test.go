@@ -17,17 +17,20 @@ import (
 	"gotest.tools/assert"
 )
 
-func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, logger *logrus.Logger, requestPath string) *test.Hook {
+func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, logger *logrus.Logger, hostname, requestPath string) *test.Hook {
 	if requestPath == "" {
 		requestPath = "/my-req"
 	}
 	// create a request
-	req := httptest.NewRequest(http.MethodGet, requestPath, nil)
+	req := httptest.NewRequest(
+		http.MethodGet,
+		fmt.Sprintf("http://%s%s", hostname, requestPath),
+		nil,
+	)
 	req.Header.Add("x-request-id", requestID)
 	req.Header.Add("user-agent", userAgent)
 	req.Header.Add("x-forwarded-for", ip)
 	req.Header.Add("x-forwarded-host", clientHost)
-	ip = removePort(req.RemoteAddr)
 
 	// create a null logger
 	var hook *test.Hook
@@ -54,19 +57,18 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 }
 
 func TestFiberLogMiddleware(t *testing.T) {
-	hostname := "example.com"
+	mockHostname := "example.com"
 
 	t.Run("test getHostname with request path without port", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 		const reqPath = "/my-req"
-		var requestPathWithoutPort = fmt.Sprintf("http://%s%s", hostname, reqPath)
 
 		logger, _ := test.NewNullLogger()
 		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, requestID, logger, requestPathWithoutPort)
+		}, requestID, logger, mockHostname, reqPath)
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
@@ -81,7 +83,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -103,7 +105,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, requestID, logger, pathWithQuery)
+		}, requestID, logger, mockHostname, pathWithQuery)
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
@@ -122,7 +124,6 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook.Reset()
 
 		req := httptest.NewRequest(http.MethodGet, requestPath, nil)
-		ip = removePort(req.RemoteAddr)
 		req.Header.Add("x-request-id", requestID)
 		req.Header.Add("user-agent", userAgent)
 		req.Header.Add("x-forwarded-for", ip)
@@ -149,7 +150,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		outcomingRequestAssertions(t, lastEntry, ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          requestPath,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -163,7 +164,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			called = true
 			return nil
-		}, "", nil, "")
+		}, "", nil, mockHostname, "")
 
 		assert.Assert(t, called, "handler is not called")
 	})
@@ -176,7 +177,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			glogger.Get(context.Background()).Info(logMessage)
 			return nil
-		}, "", logger, "")
+		}, "", logger, mockHostname, "")
 
 		assert.Equal(t, len(hook.AllEntries()), 2, "Number of logs is not 2")
 		str := buffer.String()
@@ -194,7 +195,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, requestID, nil, "")
+		}, requestID, nil, mockHostname, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
@@ -209,7 +210,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -225,7 +226,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -246,7 +247,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			c.Status(statusCode)
 			c.Set("content-length", "10")
 			return nil
-		}, requestID, nil, "")
+		}, requestID, nil, mockHostname, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
@@ -261,7 +262,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -277,7 +278,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -299,7 +300,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			c.Status(statusCode)
 			c.Write(contentToWrite)
 			return nil
-		}, requestID, nil, "")
+		}, requestID, nil, mockHostname, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
@@ -314,7 +315,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -330,7 +331,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -351,7 +352,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, requestID, logger, "")
+		}, requestID, logger, mockHostname, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
@@ -366,7 +367,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -384,7 +385,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, requestID, nil, "/-/healthz")
+		}, requestID, nil, mockHostname, "/-/healthz")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 0, "Unexpected entries length.")
@@ -398,7 +399,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, "", nil, "")
+		}, "", nil, mockHostname, "")
 
 		entries := hook.AllEntries()
 		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
@@ -413,7 +414,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
@@ -428,7 +429,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
-			Hostname:      hostname,
+			Hostname:      mockHostname,
 			ForwardedHost: clientHost,
 			Original:      userAgent,
 			IP:            ip,
