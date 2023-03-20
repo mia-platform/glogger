@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v3.0.1 - 20-03-2022
+
+### Fixed
+
+- fiber error log in request completed
+
 ## v3.0.0 - 23-12-2022
 
 ### BREAKING CHANGES
