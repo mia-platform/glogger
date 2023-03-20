@@ -79,6 +79,7 @@ func RequestFiberMiddlewareLogger(logger *logrus.Logger, excludedPrefix []string
 		logBeforeHandler(fiberLoggingContext)
 		err := fiberCtx.Next()
 		logAfterHandler(fiberLoggingContext, start, err)
+
 		return err
 	}
 }

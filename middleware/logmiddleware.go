@@ -103,14 +103,12 @@ func logAfterHandler(ctx loggingContext, startTime time.Time, err error) {
 		},
 	}
 
-	if err != nil {
-		if fiberErr, ok := err.(*fiber.Error); ok {
-			res = &Response{
-				StatusCode: fiberErr.Code,
-				Body: map[string]interface{}{
-					"bytes": len(fiberErr.Error()),
-				},
-			}
+	if fiberErr, ok := err.(*fiber.Error); err != nil && ok {
+		res = &Response{
+			StatusCode: fiberErr.Code,
+			Body: map[string]interface{}{
+				"bytes": len(fiberErr.Error()),
+			},
 		}
 	}
 
