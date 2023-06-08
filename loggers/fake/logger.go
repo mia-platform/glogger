@@ -49,7 +49,6 @@ func (l *Logger) Info(msg string) {
 
 func (l *Logger) Trace(msg string) {
 	l.setEntry("trace", msg)
-
 }
 
 func (l *Logger) WithFields(fields map[string]any) glogger.Logger[[]Entry] {
