@@ -15,8 +15,8 @@ import (
 	"github.com/mia-platform/glogger/v3/loggers/logrus/testhttplog"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
-	"gotest.tools/assert"
 )
 
 const reqIDKey = "reqId"
@@ -84,7 +84,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		}, requestID, logger, mockHostname, reqPath)
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+		require.Len(t, entries, 1, "Unexpected entries length.")
 
 		i := 0
 		outcomingRequest := entries[i]
@@ -121,10 +121,10 @@ func TestFiberLogMiddleware(t *testing.T) {
 		}, requestID, logger, mockHostname, pathWithQuery)
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+		require.Len(t, entries, 1, "Unexpected entries length.")
 		byteEntry, err := entries[0].Bytes()
-		assert.NilError(t, err)
-		assert.Check(t, strings.Contains(string(byteEntry), `"url":{"path":"/my-req?foo=bar&some=other"}`))
+		require.NoError(t, err)
+		require.True(t, strings.Contains(string(byteEntry), `"url":{"path":"/my-req?foo=bar&some=other"}`))
 
 		hook.Reset()
 	})
@@ -171,7 +171,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			return nil
 		}, "", nil, mockHostname, "")
 
-		assert.Assert(t, called, "handler is not called")
+		require.True(t, called, "handler is not called")
 	})
 
 	t.Run("log is a JSON also with trouble getting logger from context", func(t *testing.T) {
@@ -184,12 +184,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 			return nil
 		}, "", logger, mockHostname, "")
 
-		assert.Equal(t, len(hook.AllEntries()), 2, "Number of logs is not 2")
+		require.Len(t, hook.AllEntries(), 2, "Number of logs is not 2")
 		str := buffer.String()
 
 		for i, value := range strings.Split(strings.TrimSpace(str), "\n") {
 			err := assertJSON(t, value)
-			assert.Equal(t, err, nil, "log %d is not a JSON", i)
+			require.NoError(t, err, "log %d is not a JSON", i)
 		}
 	})
 
@@ -203,7 +203,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		}, requestID, nil, mockHostname, "")
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+		require.Len(t, entries, 2, "Unexpected entries length.")
 
 		i := 0
 		incomingRequest := entries[i]
@@ -239,7 +239,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			Bytes:         bodyBytes,
 		})
 
-		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
+		require.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
 
 		hook.Reset()
 	})
@@ -255,7 +255,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		}, requestID, nil, mockHostname, "")
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+		require.Len(t, entries, 2, "Unexpected entries length.")
 
 		i := 0
 		incomingRequest := entries[i]
@@ -291,7 +291,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			Bytes:         10,
 		})
 
-		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
+		require.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
 
 		hook.Reset()
 	})
@@ -308,7 +308,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		}, requestID, nil, mockHostname, "")
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+		require.Len(t, entries, 2, "Unexpected entries length.")
 
 		i := 0
 		incomingRequest := entries[i]
@@ -344,7 +344,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			Bytes:         len(contentToWrite),
 		})
 
-		assert.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
+		require.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
 
 		hook.Reset()
 	})
@@ -360,7 +360,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		}, requestID, logger, mockHostname, "")
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 1, "Unexpected entries length.")
+		require.Len(t, entries, 1, "Unexpected entries length.")
 
 		i := 0
 		outcomingRequest := entries[i]
@@ -393,7 +393,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		}, requestID, nil, mockHostname, "/-/healthz")
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 0, "Unexpected entries length.")
+		require.Len(t, entries, 0, "Unexpected entries length.")
 
 		hook.Reset()
 	})
@@ -407,7 +407,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		}, "", nil, mockHostname, "")
 
 		entries := hook.AllEntries()
-		assert.Equal(t, len(entries), 2, "Unexpected entries length.")
+		require.Len(t, entries, 2, "Unexpected entries length.")
 
 		i := 0
 		incomingRequest := entries[i]
@@ -415,7 +415,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			Level:   logrus.TraceLevel,
 			Message: "incoming request",
 		})
-		assert.Assert(t, incomingRequestID != "")
+		require.NotEmpty(t, incomingRequestID)
 		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
@@ -442,7 +442,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			Bytes:         bodyBytes,
 		})
 
-		assert.Equal(t, incomingRequestID, outcomingRequestID, fmt.Sprintf("Data reqId of request and response log must be the same. for log %d", i))
+		require.Equal(t, incomingRequestID, outcomingRequestID, fmt.Sprintf("Data reqId of request and response log must be the same. for log %d", i))
 
 		hook.Reset()
 	})

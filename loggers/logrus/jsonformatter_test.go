@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCustomWriter(t *testing.T) {
@@ -93,15 +93,15 @@ func TestCustomWriter(t *testing.T) {
 				result, err := c.Format(&logEntry)
 				stringResult := string(result)
 
-				assert.Assert(t, err == nil, "failed custom writer writing: %s", err)
+				require.True(t, err == nil, "failed custom writer writing: %s", err)
 
-				assert.Equal(t, stringResult, fmt.Sprintf("{\"level\":%d,\"msg\":\"test\",\"time\":%d}\n", testCase.expectedLevel, testCase.expectedTime))
+				require.Equal(t, fmt.Sprintf("{\"level\":%d,\"msg\":\"test\",\"time\":%d}\n", testCase.expectedLevel, testCase.expectedTime), stringResult)
 
 				var timestamp int
 				fmt.Sscanf(stringResult,
 					"{\"level\":"+strconv.Itoa(testCase.expectedLevel)+",\"msg\":\"test\",\"time\":%d}",
 					&timestamp)
-				assert.Assert(t, timestamp >= 1e12 && timestamp <= 1e15, "timestamp is not in milliseconds: %d", timestamp)
+				require.True(t, timestamp >= 1e12 && timestamp <= 1e15, "timestamp is not in milliseconds: %d", timestamp)
 			})
 		}
 	})
@@ -117,7 +117,7 @@ func TestCustomWriter(t *testing.T) {
 			Data:    logrus.Fields{},
 		}
 		result, err := c.Format(&logEntry)
-		assert.NilError(t, err)
-		assert.Equal(t, strings.TrimSpace((string(result))), fmt.Sprintf(`{"level":10,"msg":"test with &, < and > encoded","time":%d}`, logEntry.Time.UnixNano()/int64(1e6)))
+		require.NoError(t, err)
+		require.Equal(t, fmt.Sprintf(`{"level":10,"msg":"test with &, < and > encoded","time":%d}`, logEntry.Time.UnixNano()/int64(1e6)), strings.TrimSpace((string(result))))
 	})
 }
