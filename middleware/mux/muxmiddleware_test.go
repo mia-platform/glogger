@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package middleware
+package mux
 
 import (
 	"bytes"
@@ -26,7 +26,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mia-platform/glogger/v3"
+	glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
+	"github.com/mia-platform/glogger/v3/loggers/logrus/testhttplog"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gotest.tools/assert"
@@ -64,7 +65,9 @@ func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, lo
 	if logger != nil {
 		hook = test.NewLocal(logger)
 	}
-	handler := RequestGorillaMuxMiddlewareLogger(logger, []string{"/-/"})
+
+	glog := glogrus.GetLogger(logrus.NewEntry(logger))
+	handler := RequestGorillaMuxMiddlewareLogger(glog, []string{"/-/"})
 	// invoke the handler
 	server := handler(next)
 	// Create a response writer
@@ -81,32 +84,6 @@ func assertJSON(t *testing.T, str string) error {
 	return err
 }
 
-type ExpectedLogFields struct {
-	Level     logrus.Level
-	RequestID string
-	Message   string
-}
-
-type ExpectedIncomingLogFields struct {
-	Method        string
-	Path          string
-	Hostname      string
-	ForwardedHost string
-	Original      string
-	IP            string
-}
-
-type ExpectedOutcomingLogFields struct {
-	Method        string
-	Path          string
-	Hostname      string
-	ForwardedHost string
-	Original      string
-	IP            string
-	Bytes         int
-	StatusCode    int
-}
-
 func TestMuxLogMiddleware(t *testing.T) {
 	t.Run("create a middleware", func(t *testing.T) {
 		called := false
@@ -120,11 +97,11 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 	t.Run("log is a JSON also with trouble getting logger from context", func(t *testing.T) {
 		var buffer bytes.Buffer
-		logger, _ := glogger.InitHelper(glogger.InitOptions{Level: "trace"})
+		logger, _ := glogrus.InitHelper(glogrus.InitOptions{Level: "trace"})
 		logger.Out = &buffer
 		const logMessage = "New log message"
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			glogger.Get(context.Background()).Info(logMessage)
+			glogrus.GetFromContext(context.Background()).Info(logMessage)
 		})
 		hook := testMockMuxMiddlewareInvocation(handler, "", logger, "")
 
@@ -150,12 +127,12 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i := 0
 		incomingRequest := entries[i]
-		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
-		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -166,12 +143,12 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i++
 		outcomingRequest := entries[i]
-		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -201,12 +178,12 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i := 0
 		incomingRequest := entries[i]
-		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
-		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -217,12 +194,12 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i++
 		outcomingRequest := entries[i]
-		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -253,12 +230,12 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i := 0
 		incomingRequest := entries[i]
-		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
-		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -269,12 +246,12 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i++
 		outcomingRequest := entries[i]
-		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -304,12 +281,12 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i := 0
 		outcomingRequest := entries[i]
-		logAssertions(t, outcomingRequest, ExpectedLogFields{
+		testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -339,12 +316,12 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i := 0
 		outcomingRequest := entries[i]
-		logAssertions(t, outcomingRequest, ExpectedLogFields{
+		testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -367,7 +344,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 		})
-		logger, _ := glogger.InitHelper(glogger.InitOptions{
+		logger, _ := glogrus.InitHelper(glogrus.InitOptions{
 			DisableHTMLEscape: true,
 		})
 		hook := testMockMuxMiddlewareInvocation(handler, requestID, logger, requestPathWithoutPort)
@@ -406,11 +383,11 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i := 0
 		incomingRequest := entries[i]
-		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:   logrus.TraceLevel,
 			Message: "incoming request",
 		})
-		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -421,11 +398,11 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		i++
 		outcomingRequest := entries[i]
-		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:   logrus.InfoLevel,
 			Message: "request completed",
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      hostname,
@@ -440,50 +417,4 @@ func TestMuxLogMiddleware(t *testing.T) {
 
 		hook.Reset()
 	})
-}
-
-func logAssertions(t *testing.T, logEntry *logrus.Entry, expected ExpectedLogFields) string {
-	t.Helper()
-	assert.Equal(t, logEntry.Level, expected.Level, "Unexpected level of log for log in incoming request")
-	assert.Equal(t, logEntry.Message, expected.Message, "Unexpected message of log for log in incoming request")
-	requestID := logEntry.Data[reqIDKey]
-	_, ok := requestID.(string)
-	assert.Assert(t, ok, "Unexpected or empty requestID for log in incoming request")
-	if expected.RequestID != "" {
-		assert.Equal(t, requestID, expected.RequestID, "Unexpected requestID for log in incoming request")
-	}
-	return requestID.(string)
-}
-
-func incomingRequestAssertions(t *testing.T, incomingRequestLogEntry *logrus.Entry, expected ExpectedIncomingLogFields) {
-	http := incomingRequestLogEntry.Data["http"].(HTTP)
-	assert.Equal(t, http.Request.Method, expected.Method, "Unexpected http method for log in incoming request")
-	assert.Equal(t, http.Request.UserAgent["original"], expected.Original, "Unexpected original userAgent for log of request completed")
-
-	url := incomingRequestLogEntry.Data["url"].(URL)
-	assert.Equal(t, url.Path, expected.Path, "Unexpected http uri path for log in incoming request")
-
-	host := incomingRequestLogEntry.Data["host"].(Host)
-	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
-	assert.Equal(t, host.ForwardedHost, expected.ForwardedHost, "Unexpected forwaded hostname for log of request completed")
-	assert.Equal(t, host.IP, expected.IP, "Unexpected ip for log of request completed")
-}
-
-func outcomingRequestAssertions(t *testing.T, outcomingRequestLogEntry *logrus.Entry, expected ExpectedOutcomingLogFields) {
-	http := outcomingRequestLogEntry.Data["http"].(HTTP)
-	assert.Equal(t, http.Request.Method, expected.Method, "Unexpected http method for log in incoming request")
-	assert.Equal(t, http.Request.UserAgent["original"], expected.Original, "Unexpected original userAgent for log of request completed")
-	assert.Equal(t, http.Response.StatusCode, expected.StatusCode, "Unexpected status code for log of request completed")
-	assert.Equal(t, http.Response.Body["bytes"], expected.Bytes, "Unexpected status code for log of request completed")
-
-	url := outcomingRequestLogEntry.Data["url"].(URL)
-	assert.Equal(t, url.Path, expected.Path, "Unexpected http uri path for log in incoming request")
-
-	host := outcomingRequestLogEntry.Data["host"].(Host)
-	assert.Equal(t, host.Hostname, expected.Hostname, "Unexpected hostname for log of request completed")
-	assert.Equal(t, host.ForwardedHost, expected.ForwardedHost, "Unexpected forwaded hostname for log of request completed")
-	assert.Equal(t, host.IP, expected.IP, "Unexpected ip for log of request completed")
-
-	_, ok := outcomingRequestLogEntry.Data["responseTime"].(float64)
-	assert.Assert(t, ok, "Invalid took duration for log of request completed")
 }

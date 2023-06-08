@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-package middleware
+package core
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/mia-platform/glogger/v3"
-	"github.com/sirupsen/logrus"
 )
 
 const (
 	forwardedHostHeaderKey = "x-forwarded-host"
 	forwardedForHeaderKey  = "x-forwarded-for"
+	requestIDHeaderName    = "x-request-id"
+
+	IncomingRequestMessage  = "incoming request"
+	RequestCompletedMessage = "request completed"
 )
 
 // HTTP is the struct of the log formatter.
@@ -65,67 +68,59 @@ func removePort(host string) string {
 	return strings.Split(host, ":")[0]
 }
 
-func getReqID(logger *logrus.Logger, ctx loggingContext) string {
-	if requestID := ctx.Request().GetHeader("X-Request-Id"); requestID != "" {
+func GetReqID(ctx glogger.LoggingContext) string {
+	if requestID := ctx.Request().GetHeader(requestIDHeaderName); requestID != "" {
 		return requestID
 	}
 	// Generate a random uuid string. e.g. 16c9c1f2-c001-40d3-bbfe-48857367e7b5
 	requestID, err := uuid.NewRandom()
 	if err != nil {
-		logger.WithError(err).Fatal("error generating request id")
+		panic(fmt.Errorf("error generating request id: %s", err))
 	}
 	return requestID.String()
 }
 
-func logBeforeHandler(ctx loggingContext) {
-	glogger.Get(ctx.Context()).WithFields(logrus.Fields{
-		"http": HTTP{
-			Request: &Request{
-				Method:    ctx.Request().Method(),
-				UserAgent: map[string]interface{}{"original": ctx.Request().GetHeader("user-agent")},
+func LogIncomingRequest[T any](ctx glogger.LoggingContext, logger glogger.Logger[T]) {
+	logger.
+		WithFields(map[string]any{
+			"http": HTTP{
+				Request: &Request{
+					Method:    ctx.Request().Method(),
+					UserAgent: map[string]interface{}{"original": ctx.Request().GetHeader("user-agent")},
+				},
 			},
-		},
-		"url": URL{Path: ctx.Request().URI()},
-		"host": Host{
-			ForwardedHost: ctx.Request().GetHeader(forwardedHostHeaderKey),
-			Hostname:      removePort(ctx.Request().Host()),
-			IP:            ctx.Request().GetHeader(forwardedForHeaderKey),
-		},
-	}).Trace("incoming request")
+			"url": URL{Path: ctx.Request().URI()},
+			"host": Host{
+				ForwardedHost: ctx.Request().GetHeader(forwardedHostHeaderKey),
+				Hostname:      removePort(ctx.Request().Host()),
+				IP:            ctx.Request().GetHeader(forwardedForHeaderKey),
+			},
+		}).
+		Trace(IncomingRequestMessage)
 }
 
-func logAfterHandler(ctx loggingContext, startTime time.Time, err error) {
-	logger := glogger.Get(ctx.Context())
-	res := &Response{
-		StatusCode: ctx.Response().StatusCode(),
-		Body: map[string]interface{}{
-			"bytes": ctx.Response().BodySize(),
-		},
-	}
-
-	if fiberErr, ok := err.(*fiber.Error); err != nil && ok {
-		res = &Response{
-			StatusCode: fiberErr.Code,
-			Body: map[string]interface{}{
-				"bytes": len(fiberErr.Error()),
+func LogRequestCompleted[T any](ctx glogger.LoggingContext, logger glogger.Logger[T], startTime time.Time) {
+	logger.
+		WithFields(map[string]any{
+			"http": HTTP{
+				Request: &Request{
+					Method:    ctx.Request().Method(),
+					UserAgent: map[string]interface{}{"original": ctx.Request().GetHeader("user-agent")},
+				},
+				Response: &Response{
+					StatusCode: ctx.Response().StatusCode(),
+					Body: map[string]interface{}{
+						"bytes": ctx.Response().BodySize(),
+					},
+				},
 			},
-		}
-	}
-
-	logger.WithFields(logrus.Fields{
-		"http": HTTP{
-			Request: &Request{
-				Method:    ctx.Request().Method(),
-				UserAgent: map[string]interface{}{"original": ctx.Request().GetHeader("user-agent")},
+			"url": URL{Path: ctx.Request().URI()},
+			"host": Host{
+				ForwardedHost: ctx.Request().GetHeader(forwardedHostHeaderKey),
+				Hostname:      removePort(ctx.Request().Host()),
+				IP:            ctx.Request().GetHeader(forwardedForHeaderKey),
 			},
-			Response: res,
-		},
-		"url": URL{Path: ctx.Request().URI()},
-		"host": Host{
-			ForwardedHost: ctx.Request().GetHeader(forwardedHostHeaderKey),
-			Hostname:      removePort(ctx.Request().Host()),
-			IP:            ctx.Request().GetHeader(forwardedForHeaderKey),
-		},
-		"responseTime": float64(time.Since(startTime).Milliseconds()),
-	}).Info("request completed")
+			"responseTime": float64(time.Since(startTime).Milliseconds()),
+		}).
+		Info(RequestCompletedMessage)
 }

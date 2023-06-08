@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package middleware
+package mux
 
 import (
 	"net/http"
@@ -22,7 +22,6 @@ import (
 )
 
 type ResponseWriterMock struct {
-	writer            http.ResponseWriter
 	headerCalled      bool
 	writeHeaderCalled bool
 	writeCalled       bool
@@ -49,7 +48,7 @@ func (r *ResponseWriterMock) Flush() {
 
 func TestReadableResponseWriter(t *testing.T) {
 	mock := ResponseWriterMock{}
-	myw := readableResponseWriter{writer: &mock}
+	myw := readableResponseWriter{Writer: &mock}
 
 	myw.WriteHeader(200)
 	if !mock.writeHeaderCalled {

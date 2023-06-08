@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package glogger
+package logrus
 
 import (
 	"bytes"
@@ -25,8 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"gotest.tools/assert"
 )
-
-const logLevelEnv = "LOG_LEVEL"
 
 func TestInitHelper(t *testing.T) {
 	t.Run("if LOG_LEVEL not defined, return logger with info value", func(t *testing.T) {

@@ -1,8 +1,9 @@
-package middleware
+package fiber
 
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -10,12 +11,21 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mia-platform/glogger/v3"
+	glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
+	"github.com/mia-platform/glogger/v3/loggers/logrus/testhttplog"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/valyala/fasthttp"
 	"gotest.tools/assert"
 )
+
+const reqIDKey = "reqId"
+const userAgent = "goHttp"
+const bodyBytes = 0
+const path = "/my-req"
+const clientHost = "client-host"
+
+const ip = "192.168.0.1"
 
 func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, logger *logrus.Logger, hostname, requestPath string) *test.Hook {
 	if requestPath == "" {
@@ -42,11 +52,14 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 		hook = test.NewLocal(logger)
 	}
 
+	glog := glogrus.GetLogger(logrus.NewEntry(logger))
+
 	// invoke the middleware
 	app := fiber.New()
 	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(c)
-	app.Use(RequestFiberMiddlewareLogger(logger, []string{"/-/"}))
+
+	app.Use(RequestFiberMiddlewareLogger(glog, []string{"/-/"}))
 
 	requestPathWithoutQuery := strings.Split(requestPath, "?")[0]
 	app.Get(requestPathWithoutQuery, handler)
@@ -75,12 +88,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i := 0
 		outcomingRequest := entries[i]
-		logAssertions(t, outcomingRequest, ExpectedLogFields{
+		testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -99,7 +112,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const requestID = "my-req-id"
 		const pathWithQuery = "/my-req?foo=bar&some=other"
 
-		logger, _ := glogger.InitHelper(glogger.InitOptions{
+		logger, _ := glogrus.InitHelper(glogrus.InitOptions{
 			DisableHTMLEscape: true,
 		})
 		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
@@ -132,12 +145,14 @@ func TestFiberLogMiddleware(t *testing.T) {
 		app := fiber.New()
 		c := app.AcquireCtx(&fasthttp.RequestCtx{})
 		defer app.ReleaseCtx(c)
-		app.Use(RequestFiberMiddlewareLogger(logger, []string{"/-/"}))
+
+		glog := glogrus.GetLogger(logrus.NewEntry(logger))
+		app.Use(RequestFiberMiddlewareLogger(glog, []string{"/-/"}))
 		app.Test(req)
 
 		logEntries := hook.AllEntries()
 		lastEntry := logEntries[len(logEntries)-1]
-		outcomingRequestAssertions(t, lastEntry, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, lastEntry, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          requestPath,
 			Hostname:      mockHostname,
@@ -161,11 +176,11 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 	t.Run("log is a JSON also with trouble getting logger from context", func(t *testing.T) {
 		var buffer bytes.Buffer
-		logger, _ := glogger.InitHelper(glogger.InitOptions{Level: "trace"})
+		logger, _ := glogrus.InitHelper(glogrus.InitOptions{Level: "trace"})
 		logger.Out = &buffer
 		const logMessage = "New log message"
 		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
-			glogger.Get(context.Background()).Info(logMessage)
+			glogrus.GetFromContext(context.Background()).Info(logMessage)
 			return nil
 		}, "", logger, mockHostname, "")
 
@@ -192,12 +207,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i := 0
 		incomingRequest := entries[i]
-		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
-		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -208,12 +223,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i++
 		outcomingRequest := entries[i]
-		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -244,12 +259,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i := 0
 		incomingRequest := entries[i]
-		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
-		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -260,12 +275,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i++
 		outcomingRequest := entries[i]
-		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -297,12 +312,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i := 0
 		incomingRequest := entries[i]
-		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.TraceLevel,
 			Message:   "incoming request",
 			RequestID: requestID,
 		})
-		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -313,12 +328,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i++
 		outcomingRequest := entries[i]
-		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -349,12 +364,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i := 0
 		outcomingRequest := entries[i]
-		logAssertions(t, outcomingRequest, ExpectedLogFields{
+		testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:     logrus.InfoLevel,
 			Message:   "request completed",
 			RequestID: requestID,
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -396,12 +411,12 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i := 0
 		incomingRequest := entries[i]
-		incomingRequestID := logAssertions(t, incomingRequest, ExpectedLogFields{
+		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:   logrus.TraceLevel,
 			Message: "incoming request",
 		})
 		assert.Assert(t, incomingRequestID != "")
-		incomingRequestAssertions(t, incomingRequest, ExpectedIncomingLogFields{
+		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -412,11 +427,11 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		i++
 		outcomingRequest := entries[i]
-		outcomingRequestID := logAssertions(t, outcomingRequest, ExpectedLogFields{
+		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
 			Level:   logrus.InfoLevel,
 			Message: "request completed",
 		})
-		outcomingRequestAssertions(t, outcomingRequest, ExpectedOutcomingLogFields{
+		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
 			Method:        http.MethodGet,
 			Path:          path,
 			Hostname:      mockHostname,
@@ -431,4 +446,11 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 		hook.Reset()
 	})
+}
+
+func assertJSON(t *testing.T, str string) error {
+	var fields logrus.Fields
+
+	err := json.Unmarshal([]byte(str), &fields)
+	return err
 }

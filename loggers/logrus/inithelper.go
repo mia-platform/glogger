@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package glogger
+package logrus
 
 import (
 	"github.com/sirupsen/logrus"
