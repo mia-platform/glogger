@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- manage to support different loggers other than mux
+- better routers middleware separation
+
 ## v3.0.1 - 20-03-2022
 
 ### Fixed
