@@ -1,9 +1,6 @@
 package fiber
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,15 +8,12 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
-	"github.com/mia-platform/glogger/v3/loggers/logrus/testhttplog"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/mia-platform/glogger/v3/loggers/fake"
+	"github.com/mia-platform/glogger/v3/middleware/utils"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 )
 
-const reqIDKey = "reqId"
 const userAgent = "goHttp"
 const bodyBytes = 0
 const path = "/my-req"
@@ -27,9 +21,9 @@ const clientHost = "client-host"
 
 const ip = "192.168.0.1"
 
-func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, logger *logrus.Logger, hostname, requestPath string) *test.Hook {
+func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, hostname, requestPath string) []fake.Record {
 	if requestPath == "" {
-		requestPath = "/my-req"
+		requestPath = path
 	}
 	// create a request
 	req := httptest.NewRequest(
@@ -42,17 +36,7 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 	req.Header.Add("x-forwarded-for", ip)
 	req.Header.Add("x-forwarded-host", clientHost)
 
-	// create a null logger
-	var hook *test.Hook
-	if logger == nil {
-		logger, hook = test.NewNullLogger()
-		logger.SetLevel(logrus.TraceLevel)
-	}
-	if logger != nil {
-		hook = test.NewLocal(logger)
-	}
-
-	glog := glogrus.GetLogger(logrus.NewEntry(logger))
+	glog := fake.GetLogger()
 
 	// invoke the middleware
 	app := fiber.New()
@@ -66,75 +50,155 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 
 	app.Test(req)
 
-	return hook
+	return glog.GetOriginalLogger().AllRecords()
 }
 
 func TestFiberLogMiddleware(t *testing.T) {
 	mockHostname := "example.com"
 
-	t.Run("test getHostname with request path without port", func(t *testing.T) {
+	t.Run("create a middleware", func(t *testing.T) {
+		called := false
+		testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+			called = true
+			return nil
+		}, "", mockHostname, "")
+
+		require.True(t, called, "handler is not called")
+	})
+
+	t.Run("request id from request header", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 		const reqPath = "/my-req"
 
-		logger, _ := test.NewNullLogger()
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, requestID, logger, mockHostname, reqPath)
+		}, requestID, mockHostname, reqPath)
+		require.Len(t, records, 2, "Unexpected entries length.")
 
-		entries := hook.AllEntries()
-		require.Len(t, entries, 1, "Unexpected entries length.")
+		incomingRequest := records[0]
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method: http.MethodGet,
+						UserAgent: utils.UserAgent{
+							Original: userAgent,
+						},
+					},
+				},
+				"url": utils.URL{Path: reqPath},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      mockHostname,
+					IP:            ip,
+				},
+			},
+			Message: utils.IncomingRequestMessage,
+			Level:   "trace",
+		}, incomingRequest, "incoming request")
 
-		i := 0
-		outcomingRequest := entries[i]
-		testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:     logrus.InfoLevel,
-			Message:   "request completed",
-			RequestID: requestID,
-		})
-		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-			StatusCode:    statusCode,
-			Bytes:         bodyBytes,
-		})
-
-		hook.Reset()
+		outgoingRequest := records[1]
+		require.InDelta(t, 100, outgoingRequest.Fields["responseTime"], 100)
+		outgoingRequest.Fields["responseTime"] = 0
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method:    http.MethodGet,
+						UserAgent: utils.UserAgent{Original: userAgent},
+					},
+					Response: &utils.Response{
+						StatusCode: statusCode,
+						Body: utils.ResponseBody{
+							Bytes: bodyBytes,
+						},
+					},
+				},
+				"url": utils.URL{Path: reqPath},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      mockHostname,
+					IP:            ip,
+				},
+				"responseTime": 0,
+			},
+			Message: utils.RequestCompletedMessage,
+			Level:   "info",
+		}, outgoingRequest)
 	})
 
-	t.Run("test getHostname with request path with query", func(t *testing.T) {
+	t.Run("request path with query", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 		const pathWithQuery = "/my-req?foo=bar&some=other"
 
-		logger, _ := glogrus.InitHelper(glogrus.InitOptions{
-			DisableHTMLEscape: true,
-		})
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, requestID, logger, mockHostname, pathWithQuery)
+		}, requestID, mockHostname, pathWithQuery)
+		require.Len(t, records, 2, "Unexpected entries length.")
 
-		entries := hook.AllEntries()
-		require.Len(t, entries, 1, "Unexpected entries length.")
-		byteEntry, err := entries[0].Bytes()
-		require.NoError(t, err)
-		require.True(t, strings.Contains(string(byteEntry), `"url":{"path":"/my-req?foo=bar&some=other"}`))
+		incomingRequest := records[0]
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method: http.MethodGet,
+						UserAgent: utils.UserAgent{
+							Original: userAgent,
+						},
+					},
+				},
+				"url": utils.URL{Path: pathWithQuery},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      mockHostname,
+					IP:            ip,
+				},
+			},
+			Message: utils.IncomingRequestMessage,
+			Level:   "trace",
+		}, incomingRequest, "incoming request")
 
-		hook.Reset()
+		outgoingRequest := records[1]
+		require.InDelta(t, 100, outgoingRequest.Fields["responseTime"], 100)
+		outgoingRequest.Fields["responseTime"] = 0
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method:    http.MethodGet,
+						UserAgent: utils.UserAgent{Original: userAgent},
+					},
+					Response: &utils.Response{
+						StatusCode: statusCode,
+						Body: utils.ResponseBody{
+							Bytes: bodyBytes,
+						},
+					},
+				},
+				"url": utils.URL{Path: pathWithQuery},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      mockHostname,
+					IP:            ip,
+				},
+				"responseTime": 0,
+			},
+			Message: utils.RequestCompletedMessage,
+			Level:   "info",
+		}, outgoingRequest)
 	})
 
 	t.Run("request on non-existing route should cause a 404 log", func(t *testing.T) {
 		requestPath := "/non-existing"
 		requestID := "someId"
-		logger, hook := test.NewNullLogger()
-		logger.SetLevel(logrus.TraceLevel)
-		hook.Reset()
 
 		req := httptest.NewRequest(http.MethodGet, requestPath, nil)
 		req.Header.Add("x-request-id", requestID)
@@ -146,154 +210,82 @@ func TestFiberLogMiddleware(t *testing.T) {
 		c := app.AcquireCtx(&fasthttp.RequestCtx{})
 		defer app.ReleaseCtx(c)
 
-		glog := glogrus.GetLogger(logrus.NewEntry(logger))
+		glog := fake.GetLogger()
 		app.Use(RequestFiberMiddlewareLogger(glog, []string{"/-/"}))
 		app.Test(req)
 
-		logEntries := hook.AllEntries()
-		lastEntry := logEntries[len(logEntries)-1]
-		testhttplog.OutgoingRequestAssertions(t, lastEntry, testhttplog.ExpectedOutcomingLogFields{
-			Method:        http.MethodGet,
-			Path:          requestPath,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-			StatusCode:    http.StatusNotFound,
-			Bytes:         len("Cannot GET /non-existing"),
-		})
-	})
-
-	t.Run("create a middleware", func(t *testing.T) {
-		called := false
-		testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
-			called = true
-			return nil
-		}, "", nil, mockHostname, "")
-
-		require.True(t, called, "handler is not called")
-	})
-
-	t.Run("log is a JSON also with trouble getting logger from context", func(t *testing.T) {
-		var buffer bytes.Buffer
-		logger, _ := glogrus.InitHelper(glogrus.InitOptions{Level: "trace"})
-		logger.Out = &buffer
-		const logMessage = "New log message"
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
-			glogrus.GetFromContext(context.Background()).Info(logMessage)
-			return nil
-		}, "", logger, mockHostname, "")
-
-		require.Len(t, hook.AllEntries(), 2, "Number of logs is not 2")
-		str := buffer.String()
-
-		for i, value := range strings.Split(strings.TrimSpace(str), "\n") {
-			err := assertJSON(t, value)
-			require.NoError(t, err, "log %d is not a JSON", i)
-		}
-	})
-
-	t.Run("middleware correctly passing configured logger with request id from request header", func(t *testing.T) {
-		const statusCode = 400
-		const requestID = "my-req-id"
-
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
-			c.Status(statusCode)
-			return nil
-		}, requestID, nil, mockHostname, "")
-
-		entries := hook.AllEntries()
-		require.Len(t, entries, 2, "Unexpected entries length.")
-
-		i := 0
-		incomingRequest := entries[i]
-		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:     logrus.TraceLevel,
-			Message:   "incoming request",
-			RequestID: requestID,
-		})
-		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-		})
-
-		i++
-		outcomingRequest := entries[i]
-		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:     logrus.InfoLevel,
-			Message:   "request completed",
-			RequestID: requestID,
-		})
-		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-			StatusCode:    statusCode,
-			Bytes:         bodyBytes,
-		})
-
-		require.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
-
-		hook.Reset()
+		records := glog.GetOriginalLogger().AllRecords()
+		outgoingRequest := records[1]
+		require.InDelta(t, 100, outgoingRequest.Fields["responseTime"], 100)
+		outgoingRequest.Fields["responseTime"] = 0
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method:    http.MethodGet,
+						UserAgent: utils.UserAgent{Original: userAgent},
+					},
+					Response: &utils.Response{
+						StatusCode: 404,
+						Body: utils.ResponseBody{
+							Bytes: len("Cannot GET /non-existing"),
+						},
+					},
+				},
+				"url": utils.URL{Path: requestPath},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      mockHostname,
+					IP:            ip,
+				},
+				"responseTime": 0,
+			},
+			Message: utils.RequestCompletedMessage,
+			Level:   "info",
+		}, outgoingRequest)
 	})
 
 	t.Run("passing a content-length header by default", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			c.Set("content-length", "10")
 			return nil
-		}, requestID, nil, mockHostname, "")
+		}, requestID, mockHostname, "")
+		require.Len(t, records, 2, "Unexpected entries length.")
 
-		entries := hook.AllEntries()
-		require.Len(t, entries, 2, "Unexpected entries length.")
-
-		i := 0
-		incomingRequest := entries[i]
-		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:     logrus.TraceLevel,
-			Message:   "incoming request",
-			RequestID: requestID,
-		})
-		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-		})
-
-		i++
-		outcomingRequest := entries[i]
-		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:     logrus.InfoLevel,
-			Message:   "request completed",
-			RequestID: requestID,
-		})
-		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-			StatusCode:    statusCode,
-			Bytes:         10,
-		})
-
-		require.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
-
-		hook.Reset()
+		outgoingRequest := records[1]
+		require.InDelta(t, 100, outgoingRequest.Fields["responseTime"], 100)
+		outgoingRequest.Fields["responseTime"] = 0
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method:    http.MethodGet,
+						UserAgent: utils.UserAgent{Original: userAgent},
+					},
+					Response: &utils.Response{
+						StatusCode: statusCode,
+						Body: utils.ResponseBody{
+							Bytes: 10,
+						},
+					},
+				},
+				"url": utils.URL{Path: path},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      mockHostname,
+					IP:            ip,
+				},
+				"responseTime": 0,
+			},
+			Message: utils.RequestCompletedMessage,
+			Level:   "info",
+		}, outgoingRequest)
 	})
 
 	t.Run("without content-length in the header", func(t *testing.T) {
@@ -301,156 +293,72 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const requestID = "my-req-id"
 		contentToWrite := []byte("testing\n")
 
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			c.Write(contentToWrite)
 			return nil
-		}, requestID, nil, mockHostname, "")
+		}, requestID, mockHostname, "")
+		require.Len(t, records, 2, "Unexpected entries length.")
 
-		entries := hook.AllEntries()
-		require.Len(t, entries, 2, "Unexpected entries length.")
+		outgoingRequest := records[1]
+		require.InDelta(t, 100, outgoingRequest.Fields["responseTime"], 100)
+		outgoingRequest.Fields["responseTime"] = 0
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method:    http.MethodGet,
+						UserAgent: utils.UserAgent{Original: userAgent},
+					},
+					Response: &utils.Response{
+						StatusCode: statusCode,
+						Body: utils.ResponseBody{
+							Bytes: len(contentToWrite),
+						},
+					},
+				},
+				"url": utils.URL{Path: path},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      mockHostname,
+					IP:            ip,
+				},
+				"responseTime": 0,
+			},
+			Message: utils.RequestCompletedMessage,
+			Level:   "info",
+		}, outgoingRequest)
 
-		i := 0
-		incomingRequest := entries[i]
-		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:     logrus.TraceLevel,
-			Message:   "incoming request",
-			RequestID: requestID,
-		})
-		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-		})
-
-		i++
-		outcomingRequest := entries[i]
-		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:     logrus.InfoLevel,
-			Message:   "request completed",
-			RequestID: requestID,
-		})
-		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-			StatusCode:    statusCode,
-			Bytes:         len(contentToWrite),
-		})
-
-		require.Equal(t, incomingRequestID, outcomingRequestID, "Data reqId of request and response log must be the same")
-
-		hook.Reset()
-	})
-
-	t.Run("using info level returning only outcomingRequest", func(t *testing.T) {
-		const statusCode = 200
-		const requestID = "my-req-id"
-
-		logger, _ := test.NewNullLogger()
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
-			c.Status(statusCode)
-			return nil
-		}, requestID, logger, mockHostname, "")
-
-		entries := hook.AllEntries()
-		require.Len(t, entries, 1, "Unexpected entries length.")
-
-		i := 0
-		outcomingRequest := entries[i]
-		testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:     logrus.InfoLevel,
-			Message:   "request completed",
-			RequestID: requestID,
-		})
-		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-			StatusCode:    statusCode,
-			Bytes:         bodyBytes,
-		})
-
-		hook.Reset()
 	})
 
 	t.Run("do not log skipped paths", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, requestID, nil, mockHostname, "/-/healthz")
+		}, requestID, mockHostname, "/-/healthz")
 
-		entries := hook.AllEntries()
-		require.Len(t, entries, 0, "Unexpected entries length.")
-
-		hook.Reset()
+		require.Len(t, records, 0, "Unexpected entries length.")
 	})
 
 	t.Run("middleware correctly create request id if not present in header", func(t *testing.T) {
 		const statusCode = 400
 
-		hook := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
-		}, "", nil, mockHostname, "")
+		}, "", mockHostname, "")
+		require.Len(t, records, 2, "Unexpected entries length.")
 
-		entries := hook.AllEntries()
-		require.Len(t, entries, 2, "Unexpected entries length.")
+		incomingRequestReqId := records[0].Fields["reqId"].(string)
+		require.NotEmpty(t, incomingRequestReqId)
 
-		i := 0
-		incomingRequest := entries[i]
-		incomingRequestID := testhttplog.LogAssertions(t, incomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:   logrus.TraceLevel,
-			Message: "incoming request",
-		})
-		require.NotEmpty(t, incomingRequestID)
-		testhttplog.IncomingRequestAssertions(t, incomingRequest, testhttplog.ExpectedIncomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-		})
+		requestCompletedReqId := records[1].Fields["reqId"].(string)
+		require.NotEmpty(t, requestCompletedReqId)
 
-		i++
-		outcomingRequest := entries[i]
-		outcomingRequestID := testhttplog.LogAssertions(t, outcomingRequest, reqIDKey, testhttplog.ExpectedLogFields{
-			Level:   logrus.InfoLevel,
-			Message: "request completed",
-		})
-		testhttplog.OutgoingRequestAssertions(t, outcomingRequest, testhttplog.ExpectedOutcomingLogFields{
-			Method:        http.MethodGet,
-			Path:          path,
-			Hostname:      mockHostname,
-			ForwardedHost: clientHost,
-			Original:      userAgent,
-			IP:            ip,
-			StatusCode:    statusCode,
-			Bytes:         bodyBytes,
-		})
-
-		require.Equal(t, incomingRequestID, outcomingRequestID, fmt.Sprintf("Data reqId of request and response log must be the same. for log %d", i))
-
-		hook.Reset()
+		require.Equal(t, incomingRequestReqId, requestCompletedReqId)
 	})
-}
-
-func assertJSON(t *testing.T, str string) error {
-	var fields logrus.Fields
-
-	err := json.Unmarshal([]byte(str), &fields)
-	return err
 }

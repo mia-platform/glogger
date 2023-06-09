@@ -262,7 +262,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		}, outgoingRequest)
 	})
 
-	t.Run("test request path without port", func(t *testing.T) {
+	t.Run("request path without port", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 		var requestPathWithoutPort = fmt.Sprintf("http://%s/my-req", hostname)
@@ -304,7 +304,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		}, outgoingRequest)
 	})
 
-	t.Run("test request path with query", func(t *testing.T) {
+	t.Run("request path with query", func(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 		const pathWithQuery = "/my-req?foo=bar&some=other"

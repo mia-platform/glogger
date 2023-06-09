@@ -72,7 +72,7 @@ func (flc *fiberLoggingContext) StatusCode() int {
 	return flc.c.Response().StatusCode()
 }
 
-// RequestFiberMiddlewareLogger is a fiber middleware to log all requests with logrus
+// RequestFiberMiddlewareLogger is a fiber middleware to log all requests
 // It logs the incoming request and when request is completed, adding latency of the request
 func RequestFiberMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPrefix []string) func(*fiber.Ctx) error {
 	return func(fiberCtx *fiber.Ctx) error {
@@ -87,16 +87,17 @@ func RequestFiberMiddlewareLogger[Logger any](logger core.Logger[Logger], exclud
 		start := time.Now()
 
 		requestID := utils.GetReqID(fiberLoggingContext)
-		ctx := glogger.WithLogger(fiberCtx.UserContext(), logger.WithFields(map[string]any{
+		loggerWithReqId := logger.WithFields(map[string]any{
 			"reqId": requestID,
-		}).GetOriginalLogger())
+		})
+		ctx := glogger.WithLogger(fiberCtx.UserContext(), loggerWithReqId.GetOriginalLogger())
 		fiberCtx.SetUserContext(ctx)
 
-		utils.LogIncomingRequest[Logger](fiberLoggingContext, logger)
+		utils.LogIncomingRequest[Logger](fiberLoggingContext, loggerWithReqId)
 		err := fiberCtx.Next()
 		fiberLoggingContext.setError(err)
 
-		utils.LogRequestCompleted[Logger](fiberLoggingContext, logger, start)
+		utils.LogRequestCompleted[Logger](fiberLoggingContext, loggerWithReqId, start)
 
 		return err
 	}
