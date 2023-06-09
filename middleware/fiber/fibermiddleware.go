@@ -72,9 +72,9 @@ func (flc *fiberLoggingContext) StatusCode() int {
 	return flc.c.Response().StatusCode()
 }
 
-// RequestFiberMiddlewareLogger is a fiber middleware to log all requests
+// RequestMiddlewareLogger is a fiber middleware to log all requests
 // It logs the incoming request and when request is completed, adding latency of the request
-func RequestFiberMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPrefix []string) func(*fiber.Ctx) error {
+func RequestMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPrefix []string) func(*fiber.Ctx) error {
 	return func(fiberCtx *fiber.Ctx) error {
 		fiberLoggingContext := &fiberLoggingContext{c: fiberCtx}
 

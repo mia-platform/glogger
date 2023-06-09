@@ -138,7 +138,7 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 	defer app.ReleaseCtx(c)
 
 	glog := glogrus.GetLogger(logrus.NewEntry(logger))
-	app.Use(gloggerfiber.RequestFiberMiddlewareLogger(glog, []string{"/-/"}))
+	app.Use(gloggerfiber.RequestMiddlewareLogger(glog, []string{"/-/"}))
 
 	requestPathWithoutQuery := strings.Split(requestPath, "?")[0]
 	app.Get(requestPathWithoutQuery, handler)

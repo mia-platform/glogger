@@ -43,7 +43,7 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(c)
 
-	app.Use(RequestFiberMiddlewareLogger(glog, []string{"/-/"}))
+	app.Use(RequestMiddlewareLogger(glog, []string{"/-/"}))
 
 	requestPathWithoutQuery := strings.Split(requestPath, "?")[0]
 	app.Get(requestPathWithoutQuery, handler)
@@ -211,7 +211,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		defer app.ReleaseCtx(c)
 
 		glog := fake.GetLogger()
-		app.Use(RequestFiberMiddlewareLogger(glog, []string{"/-/"}))
+		app.Use(RequestMiddlewareLogger(glog, []string{"/-/"}))
 		app.Test(req)
 
 		records := glog.GetOriginalLogger().AllRecords()
