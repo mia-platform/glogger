@@ -41,16 +41,24 @@ type HTTP struct {
 	Response *Response `json:"response,omitempty"`
 }
 
+type UserAgent struct {
+	Original string `json:"original,omitempty"`
+}
+
 // Request contains the items of request info log.
 type Request struct {
-	Method    string                 `json:"method,omitempty"`
-	UserAgent map[string]interface{} `json:"userAgent,omitempty"`
+	Method    string    `json:"method,omitempty"`
+	UserAgent UserAgent `json:"userAgent,omitempty"`
+}
+
+type ResponseBody struct {
+	Bytes int `json:"bytes,omitempty"`
 }
 
 // Response contains the items of response info log.
 type Response struct {
-	StatusCode int                    `json:"statusCode,omitempty"`
-	Body       map[string]interface{} `json:"body,omitempty"`
+	StatusCode int          `json:"statusCode,omitempty"`
+	Body       ResponseBody `json:"body,omitempty"`
 }
 
 // Host has the host information.
@@ -86,8 +94,10 @@ func LogIncomingRequest[T any](ctx glogger.LoggingContext, logger core.Logger[T]
 		WithFields(map[string]any{
 			"http": HTTP{
 				Request: &Request{
-					Method:    ctx.Request().Method(),
-					UserAgent: map[string]interface{}{"original": ctx.Request().GetHeader("user-agent")},
+					Method: ctx.Request().Method(),
+					UserAgent: UserAgent{
+						Original: ctx.Request().GetHeader("user-agent"),
+					},
 				},
 			},
 			"url": URL{Path: ctx.Request().URI()},
@@ -105,13 +115,15 @@ func LogRequestCompleted[T any](ctx glogger.LoggingContext, logger core.Logger[T
 		WithFields(map[string]any{
 			"http": HTTP{
 				Request: &Request{
-					Method:    ctx.Request().Method(),
-					UserAgent: map[string]interface{}{"original": ctx.Request().GetHeader("user-agent")},
+					Method: ctx.Request().Method(),
+					UserAgent: UserAgent{
+						Original: ctx.Request().GetHeader("user-agent"),
+					},
 				},
 				Response: &Response{
 					StatusCode: ctx.Response().StatusCode(),
-					Body: map[string]interface{}{
-						"bytes": ctx.Response().BodySize(),
+					Body: ResponseBody{
+						Bytes: ctx.Response().BodySize(),
 					},
 				},
 			},

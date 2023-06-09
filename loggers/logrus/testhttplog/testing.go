@@ -50,7 +50,7 @@ func LogAssertions(t *testing.T, logEntry *logrus.Entry, reqIDKey string, expect
 func IncomingRequestAssertions(t *testing.T, incomingRequestLogEntry *logrus.Entry, expected ExpectedIncomingLogFields) {
 	http := incomingRequestLogEntry.Data["http"].(utils.HTTP)
 	require.Equal(t, expected.Method, http.Request.Method, "Unexpected http method for log in incoming request")
-	require.Equal(t, expected.Original, http.Request.UserAgent["original"], "Unexpected original userAgent for log of request completed")
+	require.Equal(t, expected.Original, http.Request.UserAgent.Original, "Unexpected original userAgent for log of request completed")
 
 	url := incomingRequestLogEntry.Data["url"].(utils.URL)
 	require.Equal(t, expected.Path, url.Path, "Unexpected http uri path for log in incoming request")
@@ -64,9 +64,9 @@ func IncomingRequestAssertions(t *testing.T, incomingRequestLogEntry *logrus.Ent
 func OutgoingRequestAssertions(t *testing.T, outcomingRequestLogEntry *logrus.Entry, expected ExpectedOutcomingLogFields) {
 	http := outcomingRequestLogEntry.Data["http"].(utils.HTTP)
 	require.Equal(t, expected.Method, http.Request.Method, "Unexpected http method for log in incoming request")
-	require.Equal(t, expected.Original, http.Request.UserAgent["original"], "Unexpected original userAgent for log of request completed")
+	require.Equal(t, expected.Original, http.Request.UserAgent.Original, "Unexpected original userAgent for log of request completed")
 	require.Equal(t, expected.StatusCode, http.Response.StatusCode, "Unexpected status code for log of request completed")
-	require.Equal(t, expected.Bytes, http.Response.Body["bytes"], "Unexpected status code for log of request completed")
+	require.Equal(t, expected.Bytes, http.Response.Body.Bytes, "Unexpected status code for log of request completed")
 
 	url := outcomingRequestLogEntry.Data["url"].(utils.URL)
 	require.Equal(t, expected.Path, url.Path, "Unexpected http uri path for log in incoming request")

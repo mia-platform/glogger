@@ -1,7 +1,6 @@
 package mux
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,11 +15,6 @@ import (
 type muxLoggingContext struct {
 	req *http.Request
 	res *readableResponseWriter
-	ctx context.Context
-}
-
-func (mlc *muxLoggingContext) Context() context.Context {
-	return mlc.ctx
 }
 
 func (mlc *muxLoggingContext) Request() glogger.RequestLoggingContext {
@@ -68,7 +62,8 @@ func (mrlc *muxResponseLoggingContext) StatusCode() int {
 	return mrlc.res.StatusCode
 }
 
-// RequestGorillaMuxMiddlewareLogger is a gorilla/mux middleware to log all requests with logrus
+// TODO: rename me
+// RequestGorillaMuxMiddlewareLogger is a gorilla/mux middleware to log all requests
 // It logs the incoming request and when request is completed, adding latency of the request
 func RequestGorillaMuxMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPrefix []string) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
@@ -81,10 +76,10 @@ func RequestGorillaMuxMiddlewareLogger[Logger any](logger core.Logger[Logger], e
 			}
 
 			requestID := utils.GetReqID(muxLoggingContext)
-			ctx := glogger.WithLogger(r.Context(), logger.WithFields(map[string]any{
+			loggerWithReqId := logger.WithFields(map[string]any{
 				"reqId": requestID,
-			}).GetOriginalLogger())
-			muxLoggingContext.ctx = ctx
+			})
+			ctx := glogger.WithLogger(r.Context(), loggerWithReqId.GetOriginalLogger())
 
 			// Skip logging for excluded routes
 			for _, prefix := range excludedPrefix {
@@ -94,9 +89,9 @@ func RequestGorillaMuxMiddlewareLogger[Logger any](logger core.Logger[Logger], e
 				}
 			}
 
-			utils.LogIncomingRequest[Logger](muxLoggingContext, logger)
+			utils.LogIncomingRequest[Logger](muxLoggingContext, loggerWithReqId)
 			next.ServeHTTP(&myw, r.WithContext(ctx))
-			utils.LogRequestCompleted[Logger](muxLoggingContext, logger, start)
+			utils.LogRequestCompleted[Logger](muxLoggingContext, loggerWithReqId, start)
 		})
 	}
 }

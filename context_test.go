@@ -22,7 +22,6 @@ import (
 
 	"github.com/mia-platform/glogger/v3/loggers/core"
 	"github.com/mia-platform/glogger/v3/loggers/fake"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,19 +43,19 @@ func TestLoggerContext(t *testing.T) {
 		notALogger := "something"
 		ctx = context.WithValue(ctx, loggerKey{}, notALogger)
 
-		_, err := Get[*logrus.Entry](ctx)
+		_, err := Get[core.Logger[*fake.Entry]](ctx)
 		require.EqualError(t, err, "logger type is not correct")
 	})
 
 	t.Run("error if logger is not in context", func(t *testing.T) {
 		ctx := context.Background()
 
-		_, err := Get[*logrus.Entry](ctx)
+		_, err := Get[core.Logger[*fake.Entry]](ctx)
 		require.EqualError(t, err, "logger not found in context")
 	})
 
 	t.Run("GetOrDie panic if not logger found", func(t *testing.T) {
 		ctx := context.Background()
-		require.PanicsWithError(t, "logger not found in context", func() { GetOrDie[*logrus.Entry](ctx) })
+		require.PanicsWithError(t, "logger not found in context", func() { GetOrDie[core.Logger[*fake.Entry]](ctx) })
 	})
 }

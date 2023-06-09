@@ -16,10 +16,7 @@
 
 package glogger
 
-import "context"
-
 type LoggingContext interface {
-	Context() context.Context
 	Request() RequestLoggingContext
 	Response() ResponseLoggingContext
 }

@@ -18,6 +18,7 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
@@ -66,8 +67,10 @@ func TestLogIncomingRequest(t *testing.T) {
 			Fields: map[string]any{
 				"http": HTTP{
 					Request: &Request{
-						Method:    "GET",
-						UserAgent: map[string]interface{}{"original": "my-agent"},
+						Method: "GET",
+						UserAgent: UserAgent{
+							Original: "my-agent",
+						},
 					},
 				},
 				"url": URL{Path: "/custom-uri"},
@@ -78,6 +81,26 @@ func TestLogIncomingRequest(t *testing.T) {
 				},
 			},
 		}, records[0])
+
+		require.JSONEq(t,
+			`{
+				"http":{
+					"request":{
+						"method":"GET",
+						"userAgent":{
+							"original":"my-agent"
+						}
+					}
+				},
+				"url": {"path": "/custom-uri"},
+				"host": {
+					"forwardedHost": "my-host",
+					"hostname": "echo-service",
+					"ip": "127.0.0.1"
+				}
+			}`,
+			getJSON(t, records[0].Fields),
+		)
 	})
 }
 
@@ -106,13 +129,15 @@ func TestLogRequestCompleted(t *testing.T) {
 			Fields: map[string]any{
 				"http": HTTP{
 					Request: &Request{
-						Method:    "GET",
-						UserAgent: map[string]interface{}{"original": "my-agent"},
+						Method: "GET",
+						UserAgent: UserAgent{
+							Original: "my-agent",
+						},
 					},
 					Response: &Response{
 						StatusCode: http.StatusOK,
-						Body: map[string]interface{}{
-							"bytes": 12,
+						Body: ResponseBody{
+							Bytes: 12,
 						},
 					},
 				},
@@ -126,5 +151,35 @@ func TestLogRequestCompleted(t *testing.T) {
 			},
 		}, records[0])
 		require.InDelta(t, records[0].Fields["responseTime"], 0, 1000)
+		require.JSONEq(t,
+			`{
+				"http":{
+					"request":{
+						"method":"GET",
+						"userAgent":{
+							"original":"my-agent"
+						}
+					},
+					"response": {
+						"statusCode": 200,
+						"body": {"bytes":12}
+					}
+				},
+				"url": {"path": "/custom-uri"},
+				"host": {
+					"forwardedHost": "my-host",
+					"hostname": "echo-service",
+					"ip": "127.0.0.1"
+				},
+				"responseTime": 0
+			}`,
+			getJSON(t, records[0].Fields),
+		)
 	})
+}
+
+func getJSON(t *testing.T, resource any) string {
+	res, err := json.Marshal(resource)
+	require.NoError(t, err)
+	return string(res)
 }

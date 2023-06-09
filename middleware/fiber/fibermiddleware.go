@@ -1,7 +1,6 @@
 package fiber
 
 import (
-	"context"
 	"strconv"
 	"strings"
 	"time"
@@ -15,10 +14,6 @@ import (
 type fiberLoggingContext struct {
 	c          *fiber.Ctx
 	handlerErr error
-}
-
-func (flc *fiberLoggingContext) Context() context.Context {
-	return flc.c.UserContext()
 }
 
 func (flc *fiberLoggingContext) Request() glogger.RequestLoggingContext {
