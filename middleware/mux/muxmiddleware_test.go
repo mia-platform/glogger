@@ -50,7 +50,7 @@ func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, re
 	req.Header.Add("x-forwarded-host", clientHost)
 
 	glog := fake.GetLogger()
-	handler := RequestGorillaMuxMiddlewareLogger(glog, []string{"/-/"})
+	handler := RequestMiddlewareLogger(glog, []string{"/-/"})
 	// invoke the handler
 	server := handler(next)
 	// Create a response writer

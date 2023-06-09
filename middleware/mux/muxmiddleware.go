@@ -62,10 +62,9 @@ func (mrlc *muxResponseLoggingContext) StatusCode() int {
 	return mrlc.res.StatusCode
 }
 
-// TODO: rename me
-// RequestGorillaMuxMiddlewareLogger is a gorilla/mux middleware to log all requests
+// RequestMiddlewareLogger is a gorilla/mux middleware to log all requests
 // It logs the incoming request and when request is completed, adding latency of the request
-func RequestGorillaMuxMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPrefix []string) mux.MiddlewareFunc {
+func RequestMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPrefix []string) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()

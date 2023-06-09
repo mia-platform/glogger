@@ -119,7 +119,7 @@ func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, lo
 		hook = test.NewLocal(logger)
 	}
 
-	handler := mux.RequestGorillaMuxMiddlewareLogger(glogrus.GetLogger(logrus.NewEntry(logger)), []string{"/-/"})
+	handler := mux.RequestMiddlewareLogger(glogrus.GetLogger(logrus.NewEntry(logger)), []string{"/-/"})
 	// invoke the handler
 	server := handler(next)
 	// Create a response writer
