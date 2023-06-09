@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package core
+package utils
 
 import (
 	"fmt"
@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mia-platform/glogger/v3"
+	"github.com/mia-platform/glogger/v3/loggers/core"
 )
 
 const (
@@ -80,7 +81,7 @@ func GetReqID(ctx glogger.LoggingContext) string {
 	return requestID.String()
 }
 
-func LogIncomingRequest[T any](ctx glogger.LoggingContext, logger glogger.Logger[T]) {
+func LogIncomingRequest[T any](ctx glogger.LoggingContext, logger core.Logger[T]) {
 	logger.
 		WithFields(map[string]any{
 			"http": HTTP{
@@ -99,7 +100,7 @@ func LogIncomingRequest[T any](ctx glogger.LoggingContext, logger glogger.Logger
 		Trace(IncomingRequestMessage)
 }
 
-func LogRequestCompleted[T any](ctx glogger.LoggingContext, logger glogger.Logger[T], startTime time.Time) {
+func LogRequestCompleted[T any](ctx glogger.LoggingContext, logger core.Logger[T], startTime time.Time) {
 	logger.
 		WithFields(map[string]any{
 			"http": HTTP{

@@ -8,7 +8,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/mia-platform/glogger/v3"
-	"github.com/mia-platform/glogger/v3/middleware/core"
+	"github.com/mia-platform/glogger/v3/loggers/core"
+	"github.com/mia-platform/glogger/v3/middleware/utils"
 )
 
 type fiberLoggingContext struct {
@@ -78,7 +79,7 @@ func (flc *fiberLoggingContext) StatusCode() int {
 
 // RequestFiberMiddlewareLogger is a fiber middleware to log all requests with logrus
 // It logs the incoming request and when request is completed, adding latency of the request
-func RequestFiberMiddlewareLogger[Logger any](logger glogger.Logger[Logger], excludedPrefix []string) func(*fiber.Ctx) error {
+func RequestFiberMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPrefix []string) func(*fiber.Ctx) error {
 	return func(fiberCtx *fiber.Ctx) error {
 		fiberLoggingContext := &fiberLoggingContext{c: fiberCtx}
 
@@ -90,17 +91,17 @@ func RequestFiberMiddlewareLogger[Logger any](logger glogger.Logger[Logger], exc
 
 		start := time.Now()
 
-		requestID := core.GetReqID(fiberLoggingContext)
+		requestID := utils.GetReqID(fiberLoggingContext)
 		ctx := glogger.WithLogger(fiberCtx.UserContext(), logger.WithFields(map[string]any{
 			"reqId": requestID,
 		}).GetOriginalLogger())
 		fiberCtx.SetUserContext(ctx)
 
-		core.LogIncomingRequest[Logger](fiberLoggingContext, logger)
+		utils.LogIncomingRequest[Logger](fiberLoggingContext, logger)
 		err := fiberCtx.Next()
 		fiberLoggingContext.setError(err)
 
-		core.LogRequestCompleted[Logger](fiberLoggingContext, logger, start)
+		utils.LogRequestCompleted[Logger](fiberLoggingContext, logger, start)
 
 		return err
 	}

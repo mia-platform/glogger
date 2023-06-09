@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package core
+package utils
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"time"
 
 	fakeLogger "github.com/mia-platform/glogger/v3/loggers/fake"
-	"github.com/mia-platform/glogger/v3/middleware/core/internal/fake"
+	"github.com/mia-platform/glogger/v3/middleware/utils/internal/fake"
 	"github.com/stretchr/testify/require"
 )
 
@@ -59,8 +59,8 @@ func TestLogIncomingRequest(t *testing.T) {
 
 		LogIncomingRequest(ctx, logger)
 
-		entries := logger.GetOriginalLogger()
-		require.Equal(t, fakeLogger.Entry{
+		records := logger.GetOriginalLogger().AllRecords()
+		require.Equal(t, fakeLogger.Record{
 			Level:   "trace",
 			Message: IncomingRequestMessage,
 			Fields: map[string]any{
@@ -77,7 +77,7 @@ func TestLogIncomingRequest(t *testing.T) {
 					IP:            "127.0.0.1",
 				},
 			},
-		}, entries[0])
+		}, records[0])
 	})
 }
 
@@ -99,8 +99,8 @@ func TestLogRequestCompleted(t *testing.T) {
 
 		LogRequestCompleted(ctx, logger, startTime)
 
-		entries := logger.GetOriginalLogger()
-		require.Equal(t, fakeLogger.Entry{
+		records := logger.GetOriginalLogger().AllRecords()
+		require.Equal(t, fakeLogger.Record{
 			Level:   "info",
 			Message: RequestCompletedMessage,
 			Fields: map[string]any{
@@ -122,9 +122,9 @@ func TestLogRequestCompleted(t *testing.T) {
 					Hostname:      "echo-service",
 					IP:            "127.0.0.1",
 				},
-				"responseTime": entries[0].Fields["responseTime"],
+				"responseTime": records[0].Fields["responseTime"],
 			},
-		}, entries[0])
-		require.InDelta(t, entries[0].Fields["responseTime"], 0, 1000)
+		}, records[0])
+		require.InDelta(t, records[0].Fields["responseTime"], 0, 1000)
 	})
 }

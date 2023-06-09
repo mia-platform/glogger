@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/mia-platform/glogger/v3/loggers/core"
+	"github.com/mia-platform/glogger/v3/loggers/fake"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -27,13 +29,14 @@ import (
 func TestLoggerContext(t *testing.T) {
 	t.Run("create and retrieve context logger correctly", func(t *testing.T) {
 		ctx := context.Background()
+		loggerToSave := fake.GetLogger().WithFields(map[string]any{
+			"test": "one",
+		})
 
-		loggerToSave := logrus.NewEntry(logrus.StandardLogger())
+		ctx = WithLogger(ctx, loggerToSave)
 
-		ctx = WithLogger(ctx, loggerToSave.WithField("test", "one"))
-
-		logger := GetOrDie[*logrus.Entry](ctx)
-		require.Equal(t, logger.Data["test"], "one")
+		logger := GetOrDie[core.Logger[*fake.Entry]](ctx)
+		require.Equal(t, logger.GetOriginalLogger().Fields["test"], "one")
 	})
 
 	t.Run("error if logger is not of the correct type", func(t *testing.T) {

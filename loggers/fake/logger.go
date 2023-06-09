@@ -17,63 +17,107 @@
 package fake
 
 import (
-	"context"
-	"fmt"
+	"sync"
 
-	"github.com/mia-platform/glogger/v3"
+	"github.com/mia-platform/glogger/v3/loggers/core"
 )
 
-type Entry struct {
+type Record struct {
 	Fields  map[string]any
 	Message string
 	Level   string
 }
 
-type Logger struct {
-	fields  map[string]any
-	entries []Entry
+type Entry struct {
+	Logger
+	records        []Record
+	originalLogger *Logger
 }
 
-func (l *Logger) setEntry(level, msg string) {
-	l.entries = append(l.entries, Entry{
-		Fields:  l.fields,
+type Logger struct {
+	mu     sync.RWMutex
+	Fields map[string]any
+	entry  *Entry
+}
+
+func (l *Logger) setRecord(level, msg string) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	l.entry.records = append(l.entry.records, Record{
+		Fields:  l.Fields,
 		Message: msg,
 		Level:   level,
 	})
-	l.fields = map[string]any{}
+
+	if originalLogger := l.entry.originalLogger; originalLogger != nil {
+		originalLogger.mu.RLock()
+		defer originalLogger.mu.RUnlock()
+
+		originalLogger.entry.records = append(originalLogger.entry.records, Record{
+			Fields:  l.Fields,
+			Message: msg,
+			Level:   level,
+		})
+	}
 }
 
 func (l *Logger) Info(msg string) {
-	l.setEntry("info", msg)
+	l.setRecord("info", msg)
 }
 
 func (l *Logger) Trace(msg string) {
-	l.setEntry("trace", msg)
+	l.setRecord("trace", msg)
 }
 
-func (l *Logger) WithFields(fields map[string]any) glogger.Logger[[]Entry] {
+func (l *Logger) WithFields(fields map[string]any) core.Logger[*Entry] {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	clonedFields := map[string]any{}
+	for k, v := range l.Fields {
+		clonedFields[k] = v
+	}
+
+	originalLogger := l
+	if l.entry.originalLogger != nil {
+		originalLogger = l.entry.originalLogger
+	}
+
+	logger := &Logger{
+		Fields: clonedFields,
+		entry: &Entry{
+			Logger: Logger{
+				Fields: clonedFields,
+				entry:  l.entry,
+			},
+			originalLogger: originalLogger,
+			records:        l.entry.records,
+		},
+	}
 	for k, v := range fields {
-		l.fields[k] = v
+		logger.entry.Fields[k] = v
 	}
-
-	return l
+	return logger
 }
 
-func (l Logger) GetOriginalLogger() []Entry {
-	return l.entries
+func (e *Entry) AllRecords() []Record {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.records
 }
 
-func GetLogger() glogger.Logger[[]Entry] {
+func (l *Logger) GetOriginalLogger() *Entry {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.entry
+}
+
+func GetLogger() core.Logger[*Entry] {
 	return &Logger{
-		fields:  map[string]any{},
-		entries: []Entry{},
+		Fields: map[string]any{},
+		entry: &Entry{
+			records: []Record{},
+		},
 	}
-}
-
-func GetFromContext(ctx context.Context) glogger.Logger[[]Entry] {
-	entry, err := glogger.Get[glogger.Logger[[]Entry]](ctx)
-	if err != nil {
-		panic(fmt.Errorf("logger not in context"))
-	}
-	return entry
 }

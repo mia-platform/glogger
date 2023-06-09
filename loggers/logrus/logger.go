@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/mia-platform/glogger/v3"
+	"github.com/mia-platform/glogger/v3/loggers/core"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,7 +38,7 @@ func (l Logger) Trace(msg string) {
 	l.logger.Trace(msg)
 }
 
-func (l *Logger) WithFields(fields map[string]any) glogger.Logger[*logrus.Entry] {
+func (l *Logger) WithFields(fields map[string]any) core.Logger[*logrus.Entry] {
 	entry := l.logger.WithFields(logrus.Fields(fields))
 	l.logger = entry
 	return l
@@ -47,7 +48,7 @@ func (l Logger) GetOriginalLogger() *logrus.Entry {
 	return l.logger
 }
 
-func GetLogger(logrus *logrus.Entry) glogger.Logger[*logrus.Entry] {
+func GetLogger(logrus *logrus.Entry) core.Logger[*logrus.Entry] {
 	return &Logger{
 		logger: logrus,
 	}

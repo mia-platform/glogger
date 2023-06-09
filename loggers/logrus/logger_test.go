@@ -138,7 +138,7 @@ func TestLogger(t *testing.T) {
 		})
 	})
 
-	t.Run("get from context", func(t *testing.T) {
+	t.Run("save and retrieve from context", func(t *testing.T) {
 		nullLogger, hook := test.NewNullLogger()
 		entry := nullLogger.WithField("some", "field")
 

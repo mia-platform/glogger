@@ -1,10 +1,8 @@
 package fake
 
 import (
-	"context"
 	"testing"
 
-	"github.com/mia-platform/glogger/v3"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,15 +13,15 @@ func TestFakeLogger(t *testing.T) {
 
 			logger.Info("my msg")
 
-			entries := logger.GetOriginalLogger()
-			require.Len(t, entries, 1)
-			require.Equal(t, []Entry{
+			records := logger.GetOriginalLogger().AllRecords()
+			require.Len(t, records, 1)
+			require.Equal(t, []Record{
 				{
 					Level:   "info",
 					Message: "my msg",
 					Fields:  map[string]any{},
 				},
-			}, entries)
+			}, records)
 		})
 
 		t.Run("trace log", func(t *testing.T) {
@@ -31,15 +29,15 @@ func TestFakeLogger(t *testing.T) {
 
 			logger.Trace("my msg")
 
-			entries := logger.GetOriginalLogger()
-			require.Len(t, entries, 1)
-			require.Equal(t, []Entry{
+			records := logger.GetOriginalLogger().AllRecords()
+			require.Len(t, records, 1)
+			require.Equal(t, []Record{
 				{
 					Level:   "trace",
 					Message: "my msg",
 					Fields:  map[string]any{},
 				},
-			}, entries)
+			}, records)
 		})
 
 		t.Run("more logs", func(t *testing.T) {
@@ -49,9 +47,9 @@ func TestFakeLogger(t *testing.T) {
 			logger.Trace("some other")
 			logger.Info("yeah")
 
-			entries := logger.GetOriginalLogger()
-			require.Len(t, entries, 3)
-			require.Equal(t, []Entry{
+			records := logger.GetOriginalLogger().AllRecords()
+			require.Len(t, records, 3)
+			require.Equal(t, []Record{
 				{
 					Level:   "info",
 					Message: "my msg",
@@ -67,7 +65,7 @@ func TestFakeLogger(t *testing.T) {
 					Message: "yeah",
 					Fields:  map[string]any{},
 				},
-			}, entries)
+			}, records)
 		})
 	})
 
@@ -82,15 +80,15 @@ func TestFakeLogger(t *testing.T) {
 
 			logger.WithFields(expectedFields).Info("my msg")
 
-			entries := logger.GetOriginalLogger()
-			require.Len(t, entries, 1)
-			require.Equal(t, []Entry{
+			records := logger.GetOriginalLogger().AllRecords()
+			require.Len(t, records, 1)
+			require.Equal(t, []Record{
 				{
 					Level:   "info",
 					Message: "my msg",
 					Fields:  expectedFields,
 				},
-			}, entries)
+			}, records)
 		})
 
 		t.Run("trace log", func(t *testing.T) {
@@ -98,27 +96,29 @@ func TestFakeLogger(t *testing.T) {
 
 			logger.WithFields(expectedFields).Trace("my msg")
 
-			entries := logger.GetOriginalLogger()
-			require.Len(t, entries, 1)
-			require.Equal(t, []Entry{
+			records := logger.GetOriginalLogger().AllRecords()
+			require.Len(t, records, 1)
+			require.Equal(t, []Record{
 				{
 					Level:   "trace",
 					Message: "my msg",
 					Fields:  expectedFields,
 				},
-			}, entries)
+			}, records)
 		})
 
 		t.Run("more logs", func(t *testing.T) {
 			logger := GetLogger()
 
 			logger.WithFields(expectedFields).Info("my msg")
-			logger.WithFields(expectedFields).Trace("some other")
+			logger.WithFields(map[string]any{
+				"some": "value",
+			}).Trace("some other")
 			logger.WithFields(expectedFields).Info("yeah")
 
-			entries := logger.GetOriginalLogger()
-			require.Len(t, entries, 3)
-			require.Equal(t, []Entry{
+			records := logger.GetOriginalLogger().AllRecords()
+			require.Len(t, records, 3)
+			require.Equal(t, []Record{
 				{
 					Level:   "info",
 					Message: "my msg",
@@ -127,29 +127,56 @@ func TestFakeLogger(t *testing.T) {
 				{
 					Level:   "trace",
 					Message: "some other",
-					Fields:  expectedFields,
+					Fields: map[string]any{
+						"some": "value",
+					},
 				},
 				{
 					Level:   "info",
 					Message: "yeah",
 					Fields:  expectedFields,
 				},
-			}, entries)
+			}, records)
 		})
-	})
 
-	t.Run("get from context", func(t *testing.T) {
-		ctx := context.Background()
-		logger := GetLogger()
+		t.Run("more logs with separate loggers", func(t *testing.T) {
+			logger := GetLogger()
 
-		ctx = glogger.WithLogger(ctx, logger)
+			l1 := logger.WithFields(expectedFields)
+			l1.Info("my msg")
+			l1.WithFields(map[string]any{
+				"some": "value",
+			}).Trace("some other")
 
-		require.NotNil(t, GetFromContext(ctx))
-	})
+			logger.WithFields(map[string]any{
+				"a": "b",
+			}).Info("yeah")
 
-	t.Run("get from context panic if not found", func(t *testing.T) {
-		ctx := context.Background()
-
-		require.PanicsWithError(t, "logger not in context", func() { GetFromContext(ctx) })
+			records := logger.GetOriginalLogger().AllRecords()
+			require.Len(t, records, 3)
+			require.Equal(t, []Record{
+				{
+					Level:   "info",
+					Message: "my msg",
+					Fields:  expectedFields,
+				},
+				{
+					Level:   "trace",
+					Message: "some other",
+					Fields: map[string]any{
+						"k1":   "v1",
+						"k2":   "v2",
+						"some": "value",
+					},
+				},
+				{
+					Level:   "info",
+					Message: "yeah",
+					Fields: map[string]any{
+						"a": "b",
+					},
+				},
+			}, records)
+		})
 	})
 }

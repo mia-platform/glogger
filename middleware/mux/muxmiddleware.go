@@ -9,7 +9,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mia-platform/glogger/v3"
-	"github.com/mia-platform/glogger/v3/middleware/core"
+	"github.com/mia-platform/glogger/v3/loggers/core"
+	"github.com/mia-platform/glogger/v3/middleware/utils"
 )
 
 type muxLoggingContext struct {
@@ -69,7 +70,7 @@ func (mrlc *muxResponseLoggingContext) StatusCode() int {
 
 // RequestGorillaMuxMiddlewareLogger is a gorilla/mux middleware to log all requests with logrus
 // It logs the incoming request and when request is completed, adding latency of the request
-func RequestGorillaMuxMiddlewareLogger[Logger any](logger glogger.Logger[Logger], excludedPrefix []string) mux.MiddlewareFunc {
+func RequestGorillaMuxMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPrefix []string) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -79,7 +80,7 @@ func RequestGorillaMuxMiddlewareLogger[Logger any](logger glogger.Logger[Logger]
 				res: &myw,
 			}
 
-			requestID := core.GetReqID(muxLoggingContext)
+			requestID := utils.GetReqID(muxLoggingContext)
 			ctx := glogger.WithLogger(r.Context(), logger.WithFields(map[string]any{
 				"reqId": requestID,
 			}).GetOriginalLogger())
@@ -93,9 +94,9 @@ func RequestGorillaMuxMiddlewareLogger[Logger any](logger glogger.Logger[Logger]
 				}
 			}
 
-			core.LogIncomingRequest[Logger](muxLoggingContext, logger)
+			utils.LogIncomingRequest[Logger](muxLoggingContext, logger)
 			next.ServeHTTP(&myw, r.WithContext(ctx))
-			core.LogRequestCompleted[Logger](muxLoggingContext, logger, start)
+			utils.LogRequestCompleted[Logger](muxLoggingContext, logger, start)
 		})
 	}
 }

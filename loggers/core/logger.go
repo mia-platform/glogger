@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package glogger
+package core
 
 type Logger[T any] interface {
 	WithFields(fields map[string]any) Logger[T]
