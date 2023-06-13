@@ -78,7 +78,7 @@ func RequestMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPre
 			loggerWithReqId := logger.WithFields(map[string]any{
 				"reqId": requestID,
 			})
-			ctx := glogger.WithLogger(r.Context(), loggerWithReqId.GetOriginalLogger())
+			ctx := glogger.WithLogger(r.Context(), loggerWithReqId.OriginalLogger())
 
 			// Skip logging for excluded routes
 			for _, prefix := range excludedPrefix {

@@ -21,5 +21,5 @@ type Logger[T any] interface {
 	Trace(msg string)
 	Info(msg string)
 
-	GetOriginalLogger() T
+	OriginalLogger() T
 }

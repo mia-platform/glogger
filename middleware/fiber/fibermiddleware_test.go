@@ -50,7 +50,7 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 
 	app.Test(req)
 
-	return glog.GetOriginalLogger().AllRecords()
+	return glog.OriginalLogger().AllRecords()
 }
 
 func TestFiberLogMiddleware(t *testing.T) {
@@ -214,7 +214,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		app.Use(RequestMiddlewareLogger(glog, []string{"/-/"}))
 		app.Test(req)
 
-		records := glog.GetOriginalLogger().AllRecords()
+		records := glog.OriginalLogger().AllRecords()
 		outgoingRequest := records[1]
 		require.InDelta(t, 100, outgoingRequest.Fields["responseTime"], 100)
 		outgoingRequest.Fields["responseTime"] = 0

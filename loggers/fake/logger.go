@@ -102,14 +102,14 @@ func (l *Logger) WithFields(fields map[string]any) core.Logger[*Entry] {
 }
 
 func (e *Entry) AllRecords() []Record {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	return e.records
 }
 
-func (l *Logger) GetOriginalLogger() *Entry {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+func (l *Logger) OriginalLogger() *Entry {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	return l.entry
 }
 

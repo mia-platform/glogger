@@ -77,7 +77,7 @@ and, to retrieve logger injected in request context:
 
 ```go
 func(w http.ResponseWriter, req *http.Request) {
-  loggerFn := glogrus.GetFromContext(r.Context())
+  loggerFn := glogrus.FromContext(r.Context())
   loggerFn.Info("log message")
 }
 ```
@@ -104,7 +104,7 @@ And then retrieve it from the handler's context like this:
 
 ```go
 app.Get("/", func(c *fiber.Ctx) error {
-  log := glogrus.GetFromContext(c.Context())
+  log := glogrus.FromContext(c.Context())
   log.Info("log message")
   return nil
 })
@@ -132,7 +132,7 @@ To log error message using default field
 _, err := myFn()
 
 if err != nil {
-  log := glogrus.GetFromContext(c.Context()).WithError(err).Error("error calling function")
+  log := glogrus.FromContext(c.Context()).WithError(err).Error("error calling function")
 }
 ```
 
@@ -141,9 +141,9 @@ if err != nil {
 To log error message using default field
 
 ```go
-glogrus.GetFromContext(c.Context()).WithField("key", "some field").Info("error calling function")
+glogrus.FromContext(c.Context()).WithField("key", "some field").Info("error calling function")
 
-glogrus.GetFromContext(c.Context()).WithFields(&logrus.Fields{
+glogrus.FromContext(c.Context()).WithFields(&logrus.Fields{
   "key": "some field",
   "another-key": "something"
 }).Info("log with custom fields")

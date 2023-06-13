@@ -60,7 +60,7 @@ func TestLogIncomingRequest(t *testing.T) {
 
 		LogIncomingRequest(ctx, logger)
 
-		records := logger.GetOriginalLogger().AllRecords()
+		records := logger.OriginalLogger().AllRecords()
 		require.Equal(t, fakeLogger.Record{
 			Level:   "trace",
 			Message: IncomingRequestMessage,
@@ -122,7 +122,7 @@ func TestLogRequestCompleted(t *testing.T) {
 
 		LogRequestCompleted(ctx, logger, startTime)
 
-		records := logger.GetOriginalLogger().AllRecords()
+		records := logger.OriginalLogger().AllRecords()
 		require.Equal(t, fakeLogger.Record{
 			Level:   "info",
 			Message: RequestCompletedMessage,

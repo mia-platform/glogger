@@ -90,7 +90,7 @@ func RequestMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPre
 		loggerWithReqId := logger.WithFields(map[string]any{
 			"reqId": requestID,
 		})
-		ctx := glogger.WithLogger(fiberCtx.UserContext(), loggerWithReqId.GetOriginalLogger())
+		ctx := glogger.WithLogger(fiberCtx.UserContext(), loggerWithReqId.OriginalLogger())
 		fiberCtx.SetUserContext(ctx)
 
 		utils.LogIncomingRequest[Logger](fiberLoggingContext, loggerWithReqId)

@@ -13,7 +13,7 @@ func TestFakeLogger(t *testing.T) {
 
 			logger.Info("my msg")
 
-			records := logger.GetOriginalLogger().AllRecords()
+			records := logger.OriginalLogger().AllRecords()
 			require.Len(t, records, 1)
 			require.Equal(t, []Record{
 				{
@@ -29,7 +29,7 @@ func TestFakeLogger(t *testing.T) {
 
 			logger.Trace("my msg")
 
-			records := logger.GetOriginalLogger().AllRecords()
+			records := logger.OriginalLogger().AllRecords()
 			require.Len(t, records, 1)
 			require.Equal(t, []Record{
 				{
@@ -47,7 +47,7 @@ func TestFakeLogger(t *testing.T) {
 			logger.Trace("some other")
 			logger.Info("yeah")
 
-			records := logger.GetOriginalLogger().AllRecords()
+			records := logger.OriginalLogger().AllRecords()
 			require.Len(t, records, 3)
 			require.Equal(t, []Record{
 				{
@@ -80,7 +80,7 @@ func TestFakeLogger(t *testing.T) {
 
 			logger.WithFields(expectedFields).Info("my msg")
 
-			records := logger.GetOriginalLogger().AllRecords()
+			records := logger.OriginalLogger().AllRecords()
 			require.Len(t, records, 1)
 			require.Equal(t, []Record{
 				{
@@ -96,7 +96,7 @@ func TestFakeLogger(t *testing.T) {
 
 			logger.WithFields(expectedFields).Trace("my msg")
 
-			records := logger.GetOriginalLogger().AllRecords()
+			records := logger.OriginalLogger().AllRecords()
 			require.Len(t, records, 1)
 			require.Equal(t, []Record{
 				{
@@ -116,7 +116,7 @@ func TestFakeLogger(t *testing.T) {
 			}).Trace("some other")
 			logger.WithFields(expectedFields).Info("yeah")
 
-			records := logger.GetOriginalLogger().AllRecords()
+			records := logger.OriginalLogger().AllRecords()
 			require.Len(t, records, 3)
 			require.Equal(t, []Record{
 				{
@@ -152,7 +152,7 @@ func TestFakeLogger(t *testing.T) {
 				"a": "b",
 			}).Info("yeah")
 
-			records := logger.GetOriginalLogger().AllRecords()
+			records := logger.OriginalLogger().AllRecords()
 			require.Len(t, records, 3)
 			require.Equal(t, []Record{
 				{

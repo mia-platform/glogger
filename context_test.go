@@ -35,7 +35,7 @@ func TestLoggerContext(t *testing.T) {
 		ctx = WithLogger(ctx, loggerToSave)
 
 		logger := GetOrDie[core.Logger[*fake.Entry]](ctx)
-		require.Equal(t, logger.GetOriginalLogger().Fields["test"], "one")
+		require.Equal(t, logger.OriginalLogger().Fields["test"], "one")
 	})
 
 	t.Run("error if logger is not of the correct type", func(t *testing.T) {

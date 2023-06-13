@@ -57,7 +57,7 @@ func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, re
 	writer := httptest.NewRecorder()
 	// Serve HTTP server
 	server.ServeHTTP(writer, req)
-	return glog.GetOriginalLogger().AllRecords()
+	return glog.OriginalLogger().AllRecords()
 }
 
 func TestMuxLogMiddleware(t *testing.T) {

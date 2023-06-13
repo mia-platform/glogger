@@ -44,7 +44,7 @@ func (l *Logger) WithFields(fields map[string]any) core.Logger[*logrus.Entry] {
 	return l
 }
 
-func (l Logger) GetOriginalLogger() *logrus.Entry {
+func (l Logger) OriginalLogger() *logrus.Entry {
 	return l.logger
 }
 
@@ -54,7 +54,7 @@ func GetLogger(logrus *logrus.Entry) core.Logger[*logrus.Entry] {
 	}
 }
 
-func GetFromContext(ctx context.Context) *logrus.Entry {
+func FromContext(ctx context.Context) *logrus.Entry {
 	entry, err := glogger.Get[*logrus.Entry](ctx)
 	if err != nil {
 		return defaultLogger

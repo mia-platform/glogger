@@ -145,7 +145,7 @@ func TestLogger(t *testing.T) {
 		ctx := context.Background()
 		ctx = glogger.WithLogger(ctx, entry)
 
-		actual := GetFromContext(ctx)
+		actual := FromContext(ctx)
 		require.NotNil(t, actual)
 
 		actual.Info("something")
@@ -156,7 +156,7 @@ func TestLogger(t *testing.T) {
 	t.Run("get from context return default if not found in context", func(t *testing.T) {
 		ctx := context.Background()
 
-		require.NotNil(t, GetFromContext(ctx))
+		require.NotNil(t, FromContext(ctx))
 	})
 
 	t.Run("get original logger", func(t *testing.T) {
@@ -164,7 +164,7 @@ func TestLogger(t *testing.T) {
 
 		logger := GetLogger(logrus.NewEntry(logrusLogger))
 
-		require.IsType(t, &logrus.Entry{}, logger.GetOriginalLogger())
+		require.IsType(t, &logrus.Entry{}, logger.OriginalLogger())
 	})
 }
 
