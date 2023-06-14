@@ -16,29 +16,19 @@
 
 package glogger
 
-import (
-	"github.com/sirupsen/logrus"
-)
-
-// InitOptions is the struct of options to configure the logger
-type InitOptions struct {
-	Level             string
-	DisableHTMLEscape bool
+type LoggingContext interface {
+	Request() RequestLoggingContext
+	Response() ResponseLoggingContext
 }
 
-// InitHelper is a function to init json logger
-func InitHelper(options InitOptions) (*logrus.Logger, error) {
-	logger := logrus.New()
-	logger.SetFormatter(&JSONFormatter{
-		DisableHTMLEscape: options.DisableHTMLEscape,
-	})
-	if options.Level == "" {
-		return logger, nil
-	}
-	level, err := logrus.ParseLevel(options.Level)
-	if err != nil {
-		return nil, err
-	}
-	logger.SetLevel(level)
-	return logger, nil
+type RequestLoggingContext interface {
+	GetHeader(string) string
+	URI() string
+	Host() string
+	Method() string
+}
+
+type ResponseLoggingContext interface {
+	BodySize() int
+	StatusCode() int
 }

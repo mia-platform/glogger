@@ -20,59 +20,42 @@ import (
 	"context"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
-	"gotest.tools/assert"
+	"github.com/mia-platform/glogger/v3/loggers/core"
+	"github.com/mia-platform/glogger/v3/loggers/fake"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoggerContext(t *testing.T) {
 	t.Run("create and retrieve context logger correctly", func(t *testing.T) {
 		ctx := context.Background()
+		loggerToSave := fake.GetLogger().WithFields(map[string]any{
+			"test": "one",
+		})
 
-		ctx = WithLogger(ctx, Get(ctx).WithField("test", "one"))
-		assert.Equal(t, Get(ctx).Data["test"], "one")
+		ctx = WithLogger(ctx, loggerToSave)
+
+		logger := GetOrDie[core.Logger[*fake.Entry]](ctx)
+		require.Equal(t, logger.OriginalLogger().Fields["test"], "one")
 	})
 
-	t.Run("create and retrieve context logger correctly with correct time", func(t *testing.T) {
-		ctx := context.Background()
-
-		ctx = WithLogger(ctx, Get(ctx).WithField("test", "one"))
-		assert.Equal(t, Get(ctx).Data["test"], "one")
-	})
-
-	t.Run("if logger is not of the correct type, return new logger", func(t *testing.T) {
+	t.Run("error if logger is not of the correct type", func(t *testing.T) {
 		ctx := context.Background()
 		notALogger := "something"
 		ctx = context.WithValue(ctx, loggerKey{}, notALogger)
 
-		logFromContext := Get(ctx)
-
-		assert.Assert(t, logFromContext != nil, "log from context does not panic")
+		_, err := Get[core.Logger[*fake.Entry]](ctx)
+		require.EqualError(t, err, "logger type is not correct")
 	})
 
-	t.Run("if logger is not of the correct type, return new logger with correct time", func(t *testing.T) {
+	t.Run("error if logger is not in context", func(t *testing.T) {
 		ctx := context.Background()
-		notALogger := "something"
-		ctx = context.WithValue(ctx, loggerKey{}, notALogger)
 
-		logFromContext := Get(ctx)
-
-		assert.Assert(t, logFromContext != nil, "log from context does not panic")
+		_, err := Get[core.Logger[*fake.Entry]](ctx)
+		require.EqualError(t, err, "logger not found in context")
 	})
 
-	t.Run("if logger is overwrite in context, type conversion does not panic", func(t *testing.T) {
+	t.Run("GetOrDie panic if not logger found", func(t *testing.T) {
 		ctx := context.Background()
-		logger, _ := test.NewNullLogger()
-		ctx = WithLogger(ctx, logrus.NewEntry(logger))
-		notALogger := "something"
-		ctx = context.WithValue(ctx, loggerKey{}, notALogger)
-
-		logFromContext := Get(ctx)
-		var hasPanic = false
-		if r := recover(); r != nil {
-			hasPanic = true
-		}
-		assert.Assert(t, logFromContext != nil, "log from context does not panic")
-		assert.Assert(t, !hasPanic, "Get log from context panic")
+		require.PanicsWithError(t, "logger not found in context", func() { GetOrDie[core.Logger[*fake.Entry]](ctx) })
 	})
 }

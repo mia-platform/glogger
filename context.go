@@ -18,32 +18,37 @@ package glogger
 
 import (
 	"context"
-
-	"github.com/sirupsen/logrus"
+	"fmt"
 )
 
 type loggerKey struct{}
 
-var defaultLogger *logrus.Entry = logrus.NewEntry(logrus.StandardLogger())
-
 // WithLogger returns a new context with the provided logger. Use in
 // combination with logger.WithField(s) for great effect.
-func WithLogger(ctx context.Context, logger *logrus.Entry) context.Context {
+func WithLogger[Logger any](ctx context.Context, logger Logger) context.Context {
 	return context.WithValue(ctx, loggerKey{}, logger)
 }
 
-// Get retrieves the current logger from the context. If no logger is
-// available, the default logger is returned.
-func Get(ctx context.Context) *logrus.Entry {
-	logger := ctx.Value(loggerKey{})
+// Get retrieves the current logger from the context.
+func Get[Logger any](ctx context.Context) (Logger, error) {
+	loggerFromCtx := ctx.Value(loggerKey{})
 
-	if logger == nil {
-		return defaultLogger
+	if loggerFromCtx == nil {
+		return *new(Logger), fmt.Errorf("logger not found in context")
 	}
 
-	entry, ok := logger.(*logrus.Entry)
+	logger, ok := loggerFromCtx.(Logger)
 	if !ok {
-		return defaultLogger
+		return *new(Logger), fmt.Errorf("logger type is not correct")
 	}
-	return entry
+	return logger, nil
+}
+
+// Get retrieves the current logger from the context.
+func GetOrDie[Logger any](ctx context.Context) Logger {
+	logger, err := Get[Logger](ctx)
+	if err != nil {
+		panic(err)
+	}
+	return logger
 }

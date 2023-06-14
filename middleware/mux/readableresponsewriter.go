@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package middleware
+package mux
 
 import (
 	"net/http"
@@ -22,20 +22,20 @@ import (
 
 // readableResponseWriter struct, add readable statusCode to ResponseWriter
 type readableResponseWriter struct {
-	writer     http.ResponseWriter
-	statusCode int
+	Writer     http.ResponseWriter
+	StatusCode int
 	length     int
 }
 
 // WriteHeader func, set statusCode parameter
 func (r *readableResponseWriter) WriteHeader(code int) {
-	r.statusCode = code
-	r.writer.WriteHeader(code)
+	r.StatusCode = code
+	r.Writer.WriteHeader(code)
 }
 
 // Write func, calls ResponseWriter Write fn
 func (r *readableResponseWriter) Write(b []byte) (int, error) {
-	n, err := r.writer.Write(b)
+	n, err := r.Writer.Write(b)
 
 	if err != nil {
 		return n, err
@@ -47,7 +47,7 @@ func (r *readableResponseWriter) Write(b []byte) (int, error) {
 
 // Header func, calls ResponseWriter Header fn
 func (r *readableResponseWriter) Header() http.Header {
-	return r.writer.Header()
+	return r.Writer.Header()
 }
 
 func (r *readableResponseWriter) Length() int {
@@ -56,7 +56,7 @@ func (r *readableResponseWriter) Length() int {
 
 // Flush to implement http.Flusher interface
 func (r *readableResponseWriter) Flush() {
-	if flusherWriter, ok := r.writer.(http.Flusher); ok {
+	if flusherWriter, ok := r.Writer.(http.Flusher); ok {
 		flusherWriter.Flush()
 	}
 }

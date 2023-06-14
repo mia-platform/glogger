@@ -10,56 +10,74 @@
 
 **Glogger is the logger for mia-platform go services.**
 
-It uses [logrus](https://github.com/sirupsen/logrus) as logging library,
-and implements a middleware to be used with [http gorilla mux router](https://github.com/gorilla/mux) and [fiber](https://github.com/gofiber/fiber).
+It uses a logging interface to integrate with loggers, and can expose middleware for all the existent routers
+and use any combination of loggers and routers.
 
-This library follow the Mia Platform logging guidelines.
+At the moment, we support:
+
+**Loggers**:
+
+- [logrus](https://github.com/sirupsen/logrus)
+
+Do you want to use another logger? Please open a PR to include it in the repo!
+
+**Routers**:
+
+- [http gorilla mux router](https://github.com/gorilla/mux)
+- [fiber](https://github.com/gofiber/fiber)
+
+Do you want to use another router? Please open a PR to include it in the repo!
+
+This library follow the Mia-Platform logging guidelines.
 
 ## Install
 
-This library require golang at version >= 1.13
+This library require golang at version >= 1.18
 
 ```sh
-go get -u github.com/mia-platform/glogger/v3
+go get -u github.com/mia-platform/glogger/v4
 ```
 
 ## Example usage
 
-### Basic logger initialization.
+### Basic logrus initialization
 
 The allowed log level are those parsed by [logrus ParseLevel](https://godoc.org/github.com/sirupsen/logrus#ParseLevel) (e.g. panic, fatal, error, warn, warning, info, debug, trace).
 
 ```go
+import glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
+
 // Logger setup
-log, err := glogger.InitHelper(glogger.InitOptions{Level: "info"})
+logger, err := glogrus.InitHelper(glogrus.InitOptions{})
 if err != nil {
-	msg := fmt.Sprintf("An error occurred while creating the logger: %v", err)
-	panic(msg)
+  msg := fmt.Sprintf("An error occurred while creating the logger: %v", err)
+  panic(msg)
 }
 ```
 
-## Setup log middleware
-
-Two middleware loggers are available in the `middleware` package of this library. To use them you need to import it:
-
-```go
-import "github.com/mia-platform/glogger/v3/middleware"
-```
+## Middleware
 
 ### Gorilla Mux
 
 Init log middleware for [mux router](https://github.com/gorilla/mux). This log the `incoming request` and `request completed` following the mia-platform guidelines.
 
 ```go
-r := mux.NewRouter()
-r.Use(middleware.RequestGorillaMuxMiddlewareLogger(log, nil))
+import (
+  glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
+  gmux "github.com/mia-platform/glogger/v3/middleware/mux"
+)
+
+router := mux.NewRouter()
+
+middlewareLog := glogrus.GetLogger(logrus.NewEntry(logger))
+router.Use(gmux.RequestMiddlewareLogger[*logrus.Entry](middlewareLog, []string{}))
 ```
 
 and, to retrieve logger injected in request context:
 
 ```go
 func(w http.ResponseWriter, req *http.Request) {
-  loggerFn := glogger.Get(req.Context())
+  loggerFn := glogrus.FromContext(r.Context())
   loggerFn.Info("log message")
 }
 ```
@@ -69,31 +87,44 @@ func(w http.ResponseWriter, req *http.Request) {
 With [fiber](https://github.com/gofiber/fiber), you can setup the middleware in this way:
 
 ```go
+import (
+  "github.com/gofiber/fiber/v2"
+  glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
+  gfiber "github.com/mia-platform/glogger/v3/middleware/fiber"
+  "github.com/sirupsen/logrus"
+)
+
 app := fiber.New()
-app.Use(middleware.RequestFiberMiddlewareLogger())
+
+middlewareLog := glogrus.GetLogger(logrus.NewEntry(logger))
+app.Use(gfiber.RequestMiddlewareLogger[*logrus.Entry](middlewareLog, []string{}))
 ```
 
 And then retrieve it from the handler's context like this:
 
 ```go
-func(c *fiber.Ctx) {
-  loggerFn := glogger.Get(c.UserContext())
-  loggerFn.Info("log message")
-}
+app.Get("/", func(c *fiber.Ctx) error {
+  log := glogrus.FromContext(c.Context())
+  log.Info("log message")
+  return nil
+})
 ```
 
 #### with excluded path
 
-You can restrict the path where the logger middleware take effect using the second paramenter in `RequestGorillaMuxMiddlewareLogger`. For example, this could be useful to exclude `incoming request` and `request completed` logging in path router.
+You can restrict the path where the logger middleware take effect using the second paramenter in middlewares. For example, this could be useful to exclude `incoming request` and `request completed` logging in path router.
 
 Logger function is injected anyway in request context.
 
 ```go
-r := mux.NewRouter()
-r.Use(middleware.RequestGorillaMuxMiddlewareLogger(log, []string{"/-/"}))
+router := mux.NewRouter()
+
+middlewareLog := glogrus.GetLogger(logrus.NewEntry(logger))
+router.Use(gmux.RequestMiddlewareLogger[*logrus.Entry](middlewareLog, []string{"/-/"}))
+
 ```
 
-## How to log error message
+## How to log error message (example with logrus)
 
 To log error message using default field
 
@@ -101,18 +132,18 @@ To log error message using default field
 _, err := myFn()
 
 if err != nil {
-  glogger.Get(req.Context()).WithError(err).Error("error calling function")
+  log := glogrus.FromContext(c.Context()).WithError(err).Error("error calling function")
 }
 ```
 
-## How to log custom fields
+## How to log custom fields (with logrus)
 
 To log error message using default field
 
 ```go
-glogger.Get(req.Context()).WithField("key", "some field").Info("error calling function")
+glogrus.FromContext(c.Context()).WithField("key", "some field").Info("error calling function")
 
-glogger.Get(req.Context()).WithFields(&logrus.Fields{
+glogrus.FromContext(c.Context()).WithFields(&logrus.Fields{
   "key": "some field",
   "another-key": "something"
 }).Info("log with custom fields")
