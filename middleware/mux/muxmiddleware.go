@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/mia-platform/glogger/v3"
-	"github.com/mia-platform/glogger/v3/loggers/core"
-	"github.com/mia-platform/glogger/v3/middleware/utils"
+	"github.com/mia-platform/glogger/v4"
+	"github.com/mia-platform/glogger/v4/loggers/core"
+	"github.com/mia-platform/glogger/v4/middleware/utils"
 )
 
 type muxLoggingContext struct {

@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/mia-platform/glogger/v3"
-	"github.com/mia-platform/glogger/v3/loggers/core"
+	"github.com/mia-platform/glogger/v4"
+	"github.com/mia-platform/glogger/v4/loggers/core"
 )
 
 const (

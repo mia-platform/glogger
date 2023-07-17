@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mia-platform/glogger/v3/loggers/fake"
-	"github.com/mia-platform/glogger/v3/middleware/utils"
+	"github.com/mia-platform/glogger/v4/loggers/fake"
+	"github.com/mia-platform/glogger/v4/middleware/utils"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 )

@@ -45,7 +45,7 @@ go get -u github.com/mia-platform/glogger/v4
 The allowed log level are those parsed by [logrus ParseLevel](https://godoc.org/github.com/sirupsen/logrus#ParseLevel) (e.g. panic, fatal, error, warn, warning, info, debug, trace).
 
 ```go
-import glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
+import glogrus "github.com/mia-platform/glogger/v4/loggers/logrus"
 
 // Logger setup
 logger, err := glogrus.InitHelper(glogrus.InitOptions{})
@@ -63,8 +63,8 @@ Init log middleware for [mux router](https://github.com/gorilla/mux). This log t
 
 ```go
 import (
-  glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
-  gmux "github.com/mia-platform/glogger/v3/middleware/mux"
+  glogrus "github.com/mia-platform/glogger/v4/loggers/logrus"
+  gmux "github.com/mia-platform/glogger/v4/middleware/mux"
 )
 
 router := mux.NewRouter()
@@ -89,8 +89,8 @@ With [fiber](https://github.com/gofiber/fiber), you can setup the middleware in 
 ```go
 import (
   "github.com/gofiber/fiber/v2"
-  glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
-  gfiber "github.com/mia-platform/glogger/v3/middleware/fiber"
+  glogrus "github.com/mia-platform/glogger/v4/loggers/logrus"
+  gfiber "github.com/mia-platform/glogger/v4/middleware/fiber"
   "github.com/sirupsen/logrus"
 )
 

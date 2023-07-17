@@ -21,9 +21,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
-	"github.com/mia-platform/glogger/v3/loggers/logrus/testhttplog"
-	"github.com/mia-platform/glogger/v3/middleware/mux"
+	glogrus "github.com/mia-platform/glogger/v4/loggers/logrus"
+	"github.com/mia-platform/glogger/v4/loggers/logrus/testhttplog"
+	"github.com/mia-platform/glogger/v4/middleware/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"

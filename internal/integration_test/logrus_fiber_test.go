@@ -24,9 +24,9 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	glogrus "github.com/mia-platform/glogger/v3/loggers/logrus"
-	"github.com/mia-platform/glogger/v3/loggers/logrus/testhttplog"
-	gloggerfiber "github.com/mia-platform/glogger/v3/middleware/fiber"
+	glogrus "github.com/mia-platform/glogger/v4/loggers/logrus"
+	"github.com/mia-platform/glogger/v4/loggers/logrus/testhttplog"
+	gloggerfiber "github.com/mia-platform/glogger/v4/middleware/fiber"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"

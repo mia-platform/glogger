@@ -3,7 +3,7 @@ package testhttplog
 import (
 	"testing"
 
-	"github.com/mia-platform/glogger/v3/middleware/utils"
+	"github.com/mia-platform/glogger/v4/middleware/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )

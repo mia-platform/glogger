@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	fakeLogger "github.com/mia-platform/glogger/v3/loggers/fake"
-	"github.com/mia-platform/glogger/v3/middleware/utils/internal/fake"
+	fakeLogger "github.com/mia-platform/glogger/v4/loggers/fake"
+	"github.com/mia-platform/glogger/v4/middleware/utils/internal/fake"
 	"github.com/stretchr/testify/require"
 )
 

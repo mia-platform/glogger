@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/mia-platform/glogger/v3"
+	"github.com/mia-platform/glogger/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"

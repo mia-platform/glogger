@@ -1,4 +1,4 @@
-module github.com/mia-platform/glogger/v3
+module github.com/mia-platform/glogger/v4
 
 go 1.20
 

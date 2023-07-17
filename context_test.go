@@ -20,8 +20,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/mia-platform/glogger/v3/loggers/core"
-	"github.com/mia-platform/glogger/v3/loggers/fake"
+	"github.com/mia-platform/glogger/v4/loggers/core"
+	"github.com/mia-platform/glogger/v4/loggers/fake"
 	"github.com/stretchr/testify/require"
 )
 

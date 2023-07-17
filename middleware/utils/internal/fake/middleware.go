@@ -3,7 +3,7 @@ package fake
 import (
 	"context"
 
-	"github.com/mia-platform/glogger/v3"
+	"github.com/mia-platform/glogger/v4"
 )
 
 type fakeLoggingContext struct {

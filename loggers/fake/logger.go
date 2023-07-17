@@ -19,7 +19,7 @@ package fake
 import (
 	"sync"
 
-	"github.com/mia-platform/glogger/v3/loggers/core"
+	"github.com/mia-platform/glogger/v4/loggers/core"
 )
 
 type Record struct {

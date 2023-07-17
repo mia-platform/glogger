@@ -22,8 +22,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mia-platform/glogger/v3/loggers/fake"
-	"github.com/mia-platform/glogger/v3/middleware/utils"
+	"github.com/mia-platform/glogger/v4/loggers/fake"
+	"github.com/mia-platform/glogger/v4/middleware/utils"
 	"github.com/stretchr/testify/require"
 )
 
