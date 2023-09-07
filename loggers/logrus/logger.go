@@ -39,9 +39,7 @@ func (l Logger) Trace(msg string) {
 }
 
 func (l *Logger) WithFields(fields map[string]any) core.Logger[*logrus.Entry] {
-	entry := l.logger.WithFields(logrus.Fields(fields))
-	l.logger = entry
-	return l
+	return &Logger{logger: l.logger.WithFields(logrus.Fields(fields))}
 }
 
 func (l Logger) OriginalLogger() *logrus.Entry {

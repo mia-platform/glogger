@@ -118,8 +118,9 @@ func TestLogger(t *testing.T) {
 			logger.WithFields(expectedFields).Info("my msg")
 			logger.WithFields(expectedFields).Trace("some other")
 			logger.WithFields(expectedFields).Info("yeah")
+			logger.Info("ok")
 
-			require.Len(t, hook.AllEntries(), 3)
+			require.Len(t, hook.AllEntries(), 4)
 			assertLog(t, hook.AllEntries()[0], expectedLog{
 				Level:   "info",
 				Message: "my msg",
@@ -130,10 +131,15 @@ func TestLogger(t *testing.T) {
 				Message: "some other",
 				Fields:  expectedFields,
 			})
-			assertLog(t, hook.LastEntry(), expectedLog{
+			assertLog(t, hook.AllEntries()[2], expectedLog{
 				Level:   "info",
 				Message: "yeah",
 				Fields:  expectedFields,
+			})
+			assertLog(t, hook.LastEntry(), expectedLog{
+				Level:   "info",
+				Message: "ok",
+				Fields:  map[string]any{},
 			})
 		})
 	})
