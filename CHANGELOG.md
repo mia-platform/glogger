@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v4.0.1 - 07-09-2023
+
+### Fixed
+
+- fix concurrency issue in logging
+
+## v4.0.0 - 17-07-2023
+
 ### Added
 
 - manage to support different loggers other than mux
