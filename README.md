@@ -104,7 +104,7 @@ And then retrieve it from the handler's context like this:
 
 ```go
 app.Get("/", func(c *fiber.Ctx) error {
-  log := glogrus.FromContext(c.Context())
+  log := glogrus.FromContext(c.UserContext())
   log.Info("log message")
   return nil
 })
