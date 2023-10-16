@@ -17,11 +17,14 @@
 package mux
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/mia-platform/glogger/v4"
+	"github.com/mia-platform/glogger/v4/loggers/core"
 	"github.com/mia-platform/glogger/v4/loggers/fake"
 	"github.com/mia-platform/glogger/v4/middleware/utils"
 	"github.com/stretchr/testify/require"
@@ -38,7 +41,15 @@ const ip = "192.168.0.1"
 
 var defaultRequestPath = fmt.Sprintf("http://%s:%s/my-req", hostname, port)
 
-func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, requestPath string) []fake.Record {
+type ctxKey struct{}
+
+func ctxMiddleware(ctx context.Context, next http.Handler) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func testMockMuxMiddlewareInvocation(ctx context.Context, next http.HandlerFunc, requestID string, requestPath string) []fake.Record {
 	if requestPath == "" {
 		requestPath = defaultRequestPath
 	}
@@ -50,9 +61,12 @@ func testMockMuxMiddlewareInvocation(next http.HandlerFunc, requestID string, re
 	req.Header.Add("x-forwarded-host", clientHost)
 
 	glog := fake.GetLogger()
-	handler := RequestMiddlewareLogger(glog, []string{"/-/"})
+	loggerMiddleware := RequestMiddlewareLogger(glog, []string{"/-/"})
 	// invoke the handler
-	server := handler(next)
+	server := loggerMiddleware(next)
+	if ctx != nil {
+		server = ctxMiddleware(ctx, server)
+	}
 	// Create a response writer
 	writer := httptest.NewRecorder()
 	// Serve HTTP server
@@ -66,7 +80,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			called = true
 		})
-		testMockMuxMiddlewareInvocation(handler, "", "")
+		testMockMuxMiddlewareInvocation(nil, handler, "", "")
 
 		require.True(t, called, "handler is not called")
 	})
@@ -77,7 +91,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 		})
-		records := testMockMuxMiddlewareInvocation(handler, requestID, "")
+		records := testMockMuxMiddlewareInvocation(nil, handler, requestID, "")
 		require.Len(t, records, 2, "Unexpected entries length.")
 
 		incomingRequest := records[0]
@@ -101,6 +115,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			},
 			Message: utils.IncomingRequestMessage,
 			Level:   "trace",
+			Context: context.Background(),
 		}, incomingRequest, "incoming request")
 
 		outgoingRequest := records[1]
@@ -132,6 +147,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 	})
 
@@ -142,7 +158,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			w.WriteHeader(statusCode)
 			w.Header().Set("content-length", "10")
 		})
-		records := testMockMuxMiddlewareInvocation(handler, requestID, "")
+		records := testMockMuxMiddlewareInvocation(nil, handler, requestID, "")
 		require.Len(t, records, 2, "Unexpected entries length.")
 
 		incomingRequest := records[0]
@@ -164,6 +180,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			},
 			Message: utils.IncomingRequestMessage,
 			Level:   "trace",
+			Context: context.Background(),
 		}, incomingRequest, "incoming request")
 
 		outgoingRequest := records[1]
@@ -195,6 +212,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 	})
 
@@ -206,7 +224,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			w.WriteHeader(statusCode)
 			w.Write(contentToWrite)
 		})
-		records := testMockMuxMiddlewareInvocation(handler, requestID, "")
+		records := testMockMuxMiddlewareInvocation(nil, handler, requestID, "")
 		require.Len(t, records, 2, "Unexpected entries length.")
 
 		incomingRequest := records[0]
@@ -228,6 +246,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			},
 			Message: utils.IncomingRequestMessage,
 			Level:   "trace",
+			Context: context.Background(),
 		}, incomingRequest, "incoming request")
 
 		outgoingRequest := records[1]
@@ -259,6 +278,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 	})
 
@@ -270,7 +290,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 		})
-		records := testMockMuxMiddlewareInvocation(handler, requestID, requestPathWithoutPort)
+		records := testMockMuxMiddlewareInvocation(nil, handler, requestID, requestPathWithoutPort)
 		require.Len(t, records, 2, "Unexpected entries length.")
 
 		outgoingRequest := records[1]
@@ -301,6 +321,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 	})
 
@@ -314,7 +335,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			w.WriteHeader(statusCode)
 		})
 
-		records := testMockMuxMiddlewareInvocation(handler, requestID, requestPathWithoutPort)
+		records := testMockMuxMiddlewareInvocation(nil, handler, requestID, requestPathWithoutPort)
 		require.Len(t, records, 2, "Unexpected entries length.")
 
 		outgoingRequest := records[1]
@@ -345,6 +366,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 	})
 
@@ -354,7 +376,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 		})
-		records := testMockMuxMiddlewareInvocation(handler, requestID, "/-/healthz")
+		records := testMockMuxMiddlewareInvocation(nil, handler, requestID, "/-/healthz")
 		require.Len(t, records, 0, "Unexpected entries length.")
 	})
 
@@ -363,7 +385,7 @@ func TestMuxLogMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 		})
-		records := testMockMuxMiddlewareInvocation(handler, "", "")
+		records := testMockMuxMiddlewareInvocation(nil, handler, "", "")
 		require.Len(t, records, 2, "Unexpected entries length.")
 
 		incomingRequestReqId := records[0].Fields["reqId"].(string)
@@ -373,5 +395,89 @@ func TestMuxLogMiddleware(t *testing.T) {
 		require.NotEmpty(t, requestCompletedReqId)
 
 		require.Equal(t, incomingRequestReqId, requestCompletedReqId)
+	})
+
+	t.Run("middleware correctly pass context to logger", func(t *testing.T) {
+		const statusCode = 400
+		const requestID = "my-req-id"
+
+		ctx := context.Background()
+		ctx = context.WithValue(ctx, ctxKey{}, "ok")
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := glogger.GetOrDie[core.Logger[*fake.Entry]](r.Context())
+			logger.WithFields(map[string]any{"foo": "bar"}).Info("ok")
+
+			w.WriteHeader(statusCode)
+		})
+		records := testMockMuxMiddlewareInvocation(ctx, handler, requestID, "")
+		require.Len(t, records, 3, "Unexpected entries length.")
+
+		incomingRequest := records[0]
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method: http.MethodGet,
+						UserAgent: utils.UserAgent{
+							Original: userAgent,
+						},
+					},
+				},
+				"url": utils.URL{Path: path},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      hostname,
+					IP:            ip,
+				},
+			},
+			Message: utils.IncomingRequestMessage,
+			Level:   "trace",
+			Context: ctx,
+		}, incomingRequest, "incoming request")
+
+		handlerLog := records[1]
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"foo":   "bar",
+			},
+			Message: "ok",
+			Level:   "info",
+			Context: ctx,
+		}, handlerLog, "handler log")
+
+		outgoingRequest := records[2]
+		require.InDelta(t, 100, outgoingRequest.Fields["responseTime"], 100)
+
+		outgoingRequest.Fields["responseTime"] = 0
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method:    http.MethodGet,
+						UserAgent: utils.UserAgent{Original: userAgent},
+					},
+					Response: &utils.Response{
+						StatusCode: statusCode,
+						Body: utils.ResponseBody{
+							Bytes: bodyBytes,
+						},
+					},
+				},
+				"url": utils.URL{Path: path},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      hostname,
+					IP:            ip,
+				},
+				"responseTime": 0,
+			},
+			Message: utils.RequestCompletedMessage,
+			Level:   "info",
+			Context: ctx,
+		}, outgoingRequest)
 	})
 }

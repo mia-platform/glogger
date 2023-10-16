@@ -75,7 +75,7 @@ func RequestMiddlewareLogger[Logger any](logger core.Logger[Logger], excludedPre
 			}
 
 			requestID := utils.GetReqID(muxLoggingContext)
-			loggerWithReqId := logger.WithFields(map[string]any{
+			loggerWithReqId := logger.WithContext(r.Context()).WithFields(map[string]any{
 				"reqId": requestID,
 			})
 			ctx := glogger.WithLogger(r.Context(), loggerWithReqId.OriginalLogger())
