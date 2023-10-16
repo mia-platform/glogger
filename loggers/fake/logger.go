@@ -17,6 +17,7 @@
 package fake
 
 import (
+	"context"
 	"sync"
 
 	"github.com/mia-platform/glogger/v4/loggers/core"
@@ -26,12 +27,15 @@ type Record struct {
 	Fields  map[string]any
 	Message string
 	Level   string
+	Context context.Context
 }
 
 type Entry struct {
 	Logger
+	fields         map[string]any
 	records        []Record
 	originalLogger *Logger
+	ctx            context.Context
 }
 
 type Logger struct {
@@ -48,6 +52,7 @@ func (l *Logger) setRecord(level, msg string) {
 		Fields:  l.Fields,
 		Message: msg,
 		Level:   level,
+		Context: l.entry.ctx,
 	})
 
 	if originalLogger := l.entry.originalLogger; originalLogger != nil {
@@ -58,6 +63,7 @@ func (l *Logger) setRecord(level, msg string) {
 			Fields:  l.Fields,
 			Message: msg,
 			Level:   level,
+			Context: l.entry.ctx,
 		})
 	}
 }
@@ -93,10 +99,42 @@ func (l *Logger) WithFields(fields map[string]any) core.Logger[*Entry] {
 			},
 			originalLogger: originalLogger,
 			records:        l.entry.records,
+			ctx:            l.entry.ctx,
+			fields:         clonedFields,
 		},
 	}
 	for k, v := range fields {
-		logger.entry.Fields[k] = v
+		logger.entry.fields[k] = v
+	}
+	return logger
+}
+
+func (l *Logger) WithContext(ctx context.Context) core.Logger[*Entry] {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	clonedFields := map[string]any{}
+	for k, v := range l.Fields {
+		clonedFields[k] = v
+	}
+
+	originalLogger := l
+	if l.entry.originalLogger != nil {
+		originalLogger = l.entry.originalLogger
+	}
+
+	logger := &Logger{
+		Fields: l.Fields,
+		entry: &Entry{
+			Logger: Logger{
+				Fields: clonedFields,
+				entry:  l.entry,
+			},
+			originalLogger: originalLogger,
+			records:        l.entry.records,
+			ctx:            ctx,
+			fields:         l.Fields,
+		},
 	}
 	return logger
 }

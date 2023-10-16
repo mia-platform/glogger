@@ -42,6 +42,10 @@ func (l *Logger) WithFields(fields map[string]any) core.Logger[*logrus.Entry] {
 	return &Logger{logger: l.logger.WithFields(logrus.Fields(fields))}
 }
 
+func (l *Logger) WithContext(ctx context.Context) core.Logger[*logrus.Entry] {
+	return &Logger{logger: l.logger.WithContext(ctx)}
+}
+
 func (l Logger) OriginalLogger() *logrus.Entry {
 	return l.logger
 }

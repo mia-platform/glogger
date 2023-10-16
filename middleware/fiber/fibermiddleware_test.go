@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/mia-platform/glogger/v4"
+	"github.com/mia-platform/glogger/v4/loggers/core"
 	"github.com/mia-platform/glogger/v4/loggers/fake"
 	"github.com/mia-platform/glogger/v4/middleware/utils"
 	"github.com/stretchr/testify/require"
@@ -21,7 +24,16 @@ const clientHost = "client-host"
 
 const ip = "192.168.0.1"
 
-func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, hostname, requestPath string) []fake.Record {
+type ctxKey struct{}
+
+func ctxMiddleware(ctx context.Context) func(*fiber.Ctx) error {
+	return func(fiberCtx *fiber.Ctx) error {
+		fiberCtx.SetUserContext(ctx)
+		return fiberCtx.Next()
+	}
+}
+
+func testMockFiberMiddlewareInvocation(ctx context.Context, handler fiber.Handler, requestID string, hostname, requestPath string) []fake.Record {
 	if requestPath == "" {
 		requestPath = path
 	}
@@ -43,6 +55,9 @@ func testMockFiberMiddlewareInvocation(handler fiber.Handler, requestID string, 
 	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(c)
 
+	if ctx != nil {
+		app.Use(ctxMiddleware(ctx))
+	}
 	app.Use(RequestMiddlewareLogger(glog, []string{"/-/"}))
 
 	requestPathWithoutQuery := strings.Split(requestPath, "?")[0]
@@ -58,7 +73,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 
 	t.Run("create a middleware", func(t *testing.T) {
 		called := false
-		testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		testMockFiberMiddlewareInvocation(nil, func(c *fiber.Ctx) error {
 			called = true
 			return nil
 		}, "", mockHostname, "")
@@ -71,7 +86,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const requestID = "my-req-id"
 		const reqPath = "/my-req"
 
-		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(nil, func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, requestID, mockHostname, reqPath)
@@ -98,6 +113,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			},
 			Message: utils.IncomingRequestMessage,
 			Level:   "trace",
+			Context: context.Background(),
 		}, incomingRequest, "incoming request")
 
 		outgoingRequest := records[1]
@@ -128,6 +144,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 	})
 
@@ -136,7 +153,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const requestID = "my-req-id"
 		const pathWithQuery = "/my-req?foo=bar&some=other"
 
-		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(nil, func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, requestID, mockHostname, pathWithQuery)
@@ -163,6 +180,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			},
 			Message: utils.IncomingRequestMessage,
 			Level:   "trace",
+			Context: context.Background(),
 		}, incomingRequest, "incoming request")
 
 		outgoingRequest := records[1]
@@ -193,6 +211,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 	})
 
@@ -243,6 +262,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 	})
 
@@ -250,7 +270,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 
-		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(nil, func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			c.Set("content-length", "10")
 			return nil
@@ -285,6 +305,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 	})
 
@@ -293,7 +314,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const requestID = "my-req-id"
 		contentToWrite := []byte("testing\n")
 
-		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(nil, func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			c.Write(contentToWrite)
 			return nil
@@ -328,6 +349,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 			},
 			Message: utils.RequestCompletedMessage,
 			Level:   "info",
+			Context: context.Background(),
 		}, outgoingRequest)
 
 	})
@@ -336,7 +358,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 		const statusCode = 200
 		const requestID = "my-req-id"
 
-		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(nil, func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, requestID, mockHostname, "/-/healthz")
@@ -347,7 +369,7 @@ func TestFiberLogMiddleware(t *testing.T) {
 	t.Run("middleware correctly create request id if not present in header", func(t *testing.T) {
 		const statusCode = 400
 
-		records := testMockFiberMiddlewareInvocation(func(c *fiber.Ctx) error {
+		records := testMockFiberMiddlewareInvocation(nil, func(c *fiber.Ctx) error {
 			c.Status(statusCode)
 			return nil
 		}, "", mockHostname, "")
@@ -360,5 +382,88 @@ func TestFiberLogMiddleware(t *testing.T) {
 		require.NotEmpty(t, requestCompletedReqId)
 
 		require.Equal(t, incomingRequestReqId, requestCompletedReqId)
+	})
+
+	t.Run("passing user context in logger", func(t *testing.T) {
+		const statusCode = 200
+		const requestID = "my-req-id"
+		const reqPath = "/my-req"
+		ctx := context.WithValue(context.Background(), ctxKey{}, "ok")
+
+		records := testMockFiberMiddlewareInvocation(ctx, func(c *fiber.Ctx) error {
+			c.Status(statusCode)
+
+			logger := glogger.GetOrDie[core.Logger[*fake.Entry]](c.UserContext())
+			logger.WithFields(map[string]any{"foo": "bar"}).Info("ok")
+
+			return nil
+		}, requestID, mockHostname, reqPath)
+		require.Len(t, records, 3, "Unexpected entries length.")
+
+		incomingRequest := records[0]
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method: http.MethodGet,
+						UserAgent: utils.UserAgent{
+							Original: userAgent,
+						},
+					},
+				},
+				"url": utils.URL{Path: reqPath},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      mockHostname,
+					IP:            ip,
+				},
+			},
+			Message: utils.IncomingRequestMessage,
+			Level:   "trace",
+			Context: ctx,
+		}, incomingRequest, "incoming request")
+
+		handlerLog := records[1]
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"foo":   "bar",
+			},
+			Message: "ok",
+			Level:   "info",
+			Context: ctx,
+		}, handlerLog, "handler log")
+
+		outgoingRequest := records[2]
+		require.InDelta(t, 100, outgoingRequest.Fields["responseTime"], 100)
+		outgoingRequest.Fields["responseTime"] = 0
+		require.Equal(t, fake.Record{
+			Fields: map[string]any{
+				"reqId": requestID,
+				"http": utils.HTTP{
+					Request: &utils.Request{
+						Method:    http.MethodGet,
+						UserAgent: utils.UserAgent{Original: userAgent},
+					},
+					Response: &utils.Response{
+						StatusCode: statusCode,
+						Body: utils.ResponseBody{
+							Bytes: bodyBytes,
+						},
+					},
+				},
+				"url": utils.URL{Path: reqPath},
+				"host": utils.Host{
+					ForwardedHost: clientHost,
+					Hostname:      mockHostname,
+					IP:            ip,
+				},
+				"responseTime": 0,
+			},
+			Message: utils.RequestCompletedMessage,
+			Level:   "info",
+			Context: ctx,
+		}, outgoingRequest)
 	})
 }

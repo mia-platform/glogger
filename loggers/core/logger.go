@@ -16,8 +16,11 @@
 
 package core
 
+import "context"
+
 type Logger[T any] interface {
 	WithFields(fields map[string]any) Logger[T]
+	WithContext(ctx context.Context) Logger[T]
 	Trace(msg string)
 	Info(msg string)
 
