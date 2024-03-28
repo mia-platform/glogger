@@ -17,6 +17,8 @@
 package mux
 
 import (
+	"bufio"
+	"net"
 	"net/http"
 	"testing"
 )
@@ -26,6 +28,7 @@ type ResponseWriterMock struct {
 	writeHeaderCalled bool
 	writeCalled       bool
 	flushCalled       bool
+	hijackCalled      bool
 }
 
 func (r *ResponseWriterMock) Header() http.Header {
@@ -44,6 +47,12 @@ func (r *ResponseWriterMock) Write(b []byte) (int, error) {
 
 func (r *ResponseWriterMock) Flush() {
 	r.flushCalled = true
+}
+
+func (r *ResponseWriterMock) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	r.hijackCalled = true
+
+	return nil, nil, nil
 }
 
 func TestReadableResponseWriter(t *testing.T) {
@@ -72,5 +81,10 @@ func TestReadableResponseWriter(t *testing.T) {
 	myw.Flush()
 	if !mock.flushCalled {
 		t.Errorf("mock flush not called")
+	}
+
+	_, _, err = myw.Hijack()
+	if !mock.hijackCalled || err != nil {
+		t.Errorf("mock hijack not called successfully")
 	}
 }

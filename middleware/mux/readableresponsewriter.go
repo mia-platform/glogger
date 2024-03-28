@@ -17,6 +17,9 @@
 package mux
 
 import (
+	"bufio"
+	"fmt"
+	"net"
 	"net/http"
 )
 
@@ -59,4 +62,13 @@ func (r *readableResponseWriter) Flush() {
 	if flusherWriter, ok := r.Writer.(http.Flusher); ok {
 		flusherWriter.Flush()
 	}
+}
+
+// Hijack func, calls the underlying ResponseWriter Hijack fn
+func (r *readableResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hijacker, ok := r.Writer.(http.Hijacker); ok {
+		return hijacker.Hijack()
+	}
+
+	return nil, nil, fmt.Errorf("the Hijacker interface is not supported")
 }
