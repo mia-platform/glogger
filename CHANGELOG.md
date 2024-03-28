@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- introduce support for Hijacker interface in **mux** middleware response writer
+
 ## v4.1.0 - 16-10-2023
 
 ### Added

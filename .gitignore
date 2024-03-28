@@ -19,6 +19,9 @@
 !.vscode/extensions.json
 *.code-workspace
 
+# Jetbrains
+.idea
+
 # Vim
 # Swap
 [._]*.s[a-v][a-z]
